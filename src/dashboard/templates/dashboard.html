@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Market Sentiment Analysis Dashboard</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- Plotly.js -->
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <!-- Socket.IO -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    
+    <style>
+        .sentiment-positive { color: #28a745; }
+        .sentiment-negative { color: #dc3545; }
+        .sentiment-neutral { color: #6c757d; }
+        .card-metric { transition: all 0.3s ease; }
+        .card-metric:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        .status-indicator { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
+        .status-healthy { background-color: #28a745; }
+        .status-warning { background-color: #ffc107; }
+        .status-error { background-color: #dc3545; }
+        .chart-container { height: 400px; }
+        .ticker-card { cursor: pointer; transition: all 0.2s ease; }
+        .ticker-card:hover { background-color: #f8f9fa; }
+        .ticker-card.active { border-color: #007bff; background-color: #e3f2fd; }
+        .processing-log { max-height: 300px; overflow-y: auto; font-family: monospace; font-size: 0.85em; }
+        .explainability-bar { height: 20px; margin: 2px 0; }
+        .explainability-positive { background-color: #28a745; }
+        .explainability-negative { background-color: #dc3545; }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-dark bg-dark">
+        <div class="container-fluid">
+            <span class="navbar-brand mb-0 h1">
+                <i class="fas fa-chart-line"></i> Market Sentiment Analysis Dashboard
+            </span>
+            <div class="d-flex align-items-center">
+                <span class="status-indicator status-healthy me-2" id="connectionStatus"></span>
+                <span class="text-light me-3" id="connectionText">Connected</span>
+                <button class="btn btn-outline-light btn-sm me-2" id="startStreamBtn">
+                    <i class="fas fa-play"></i> Start Stream
+                </button>
+                <button class="btn btn-outline-light btn-sm" id="stopStreamBtn">
+                    <i class="fas fa-stop"></i> Stop Stream
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid mt-3">
+        <!-- System Status Row -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card card-metric">
+                    <div class="card-body text-center">
+                        <h5 class="card-title">Messages Processed</h5>
+                        <h2 class="text-primary" id="messagesProcessed">0</h2>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card card-metric">
+                    <div class="card-body text-center">
+                        <h5 class="card-title">Processing Rate</h5>
+                        <h2 class="text-success" id="processingRate">0/sec</h2>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card card-metric">
+                    <div class="card-body text-center">
+                        <h5 class="card-title">Active Models</h5>
+                        <h2 class="text-info" id="activeModels">0</h2>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card card-metric">
+                    <div class="card-body text-center">
+                        <h5 class="card-title">System Health</h5>
+                        <h2 id="systemHealth">
+                            <span class="status-indicator status-healthy"></span> Healthy
+                        </h2>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content Row -->
+        <div class="row">
+            <!-- Left Panel - Ticker Selection -->
+            <div class="col-md-3">
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-list"></i> Active Tickers</h5>
+                    </div>
+                    <div class="card-body p-2" id="tickerList">
+                        {% for ticker in tickers %}
+                        <div class="ticker-card p-2 mb-2 border rounded" data-ticker="{{ ticker }}">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <strong>{{ ticker }}</strong>
+                                <div>
+                                    <span class="badge bg-secondary" id="sentiment-{{ ticker }}">-</span>
+                                    <span class="badge bg-info" id="confidence-{{ ticker }}">-</span>
+                                </div>
+                            </div>
+                            <small class="text-muted" id="prediction-{{ ticker }}">No prediction</small>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Data Sources Status -->
+                <div class="card mt-3">
+                    <div class="card-header">
+                        <h6><i class="fas fa-database"></i> Data Sources</h6>
+                    </div>
+                    <div class="card-body p-2">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span>News API</span>
+                            <span class="status-indicator status-healthy" id="newsStatus"></span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span>Market Data</span>
+                            <span class="status-indicator status-healthy" id="marketStatus"></span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span>Social Media</span>
+                            <span class="status-indicator status-warning" id="socialStatus"></span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span>Stream Processor</span>
+                            <span class="status-indicator status-error" id="streamStatus"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Center Panel - Charts -->
+            <div class="col-md-6">
+                <!-- Sentiment Chart -->
+                <div class="card mb-3">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5><i class="fas fa-chart-line"></i> Sentiment Analysis</h5>
+                        <select class="form-select form-select-sm w-auto" id="sentimentTimeRange">
+                            <option value="6">Last 6 hours</option>
+                            <option value="12">Last 12 hours</option>
+                            <option value="24" selected>Last 24 hours</option>
+                            <option value="48">Last 48 hours</option>
+                        </select>
+                    </div>
+                    <div class="card-body">
+                        <div id="sentimentChart" class="chart-container"></div>
+                    </div>
+                </div>
+
+                <!-- Market Chart -->
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-chart-candlestick"></i> Price Chart</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="marketChart" class="chart-container"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Panel - Explainability & Logs -->
+            <div class="col-md-3">
+                <!-- Explainability -->
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <h6><i class="fas fa-lightbulb"></i> Prediction Explainability</h6>
+                    </div>
+                    <div class="card-body">
+                        <div id="explainabilityContent">
+                            <p class="text-muted text-center">Select a ticker to see prediction explanation</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Processing Log -->
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h6><i class="fas fa-terminal"></i> Processing Log</h6>
+                        <button class="btn btn-outline-secondary btn-sm" id="clearLogBtn">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                    <div class="card-body p-2">
+                        <div id="processingLog" class="processing-log">
+                            <div class="text-muted">Waiting for processing results...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // Global variables
+        let socket;
+        let selectedTicker = null;
+        let charts = {};
+
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeSocket();
+            setupEventListeners();
+            loadInitialData();
+            
+            // Select first ticker by default
+            const firstTicker = document.querySelector('.ticker-card');
+            if (firstTicker) {
+                selectTicker(firstTicker.dataset.ticker);
+            }
+        });
+
+        // Socket.IO initialization
+        function initializeSocket() {
+            socket = io();
+            
+            socket.on('connect', function() {
+                updateConnectionStatus(true);
+                logMessage('Connected to server', 'success');
+            });
+            
+            socket.on('disconnect', function() {
+                updateConnectionStatus(false);
+                logMessage('Disconnected from server', 'error');
+            });
+            
+            socket.on('processing_stats', function(stats) {
+                updateProcessingStats(stats);
+            });
+            
+            socket.on('prediction_update', function(data) {
+                updateTickerPrediction(data.ticker, data.prediction);
+            });
+        }
+
+        // Event listeners
+        function setupEventListeners() {
+            // Ticker selection
+            document.querySelectorAll('.ticker-card').forEach(card => {
+                card.addEventListener('click', function() {
+                    selectTicker(this.dataset.ticker);
+                });
+            });
+
+            // Stream control buttons
+            document.getElementById('startStreamBtn').addEventListener('click', startStream);
+            document.getElementById('stopStreamBtn').addEventListener('click', stopStream);
+            
+            // Time range selector
+            document.getElementById('sentimentTimeRange').addEventListener('change', function() {
+                if (selectedTicker) {
+                    loadSentimentChart(selectedTicker, this.value);
+                }
+            });
+            
+            // Clear log button
+            document.getElementById('clearLogBtn').addEventListener('click', function() {
+                document.getElementById('processingLog').innerHTML = '';
+            });
+        }
+
+        // Load initial data
+        function loadInitialData() {
+            fetch('/api/status')
+                .then(response => response.json())
+                .then(data => {
+                    updateSystemStatus(data);
+                })
+                .catch(error => {
+                    console.error('Error loading initial data:', error);
+                    logMessage('Error loading system status', 'error');
+                });
+        }
+
+        // Ticker selection
+        function selectTicker(ticker) {
+            // Update UI
+            document.querySelectorAll('.ticker-card').forEach(card => {
+                card.classList.remove('active');
+            });
+            document.querySelector(`[data-ticker="${ticker}"]`).classList.add('active');
+            
+            selectedTicker = ticker;
+            
+            // Subscribe to real-time updates
+            socket.emit('subscribe_ticker', {ticker: ticker});
+            
+            // Load charts
+            loadSentimentChart(ticker);
+            loadMarketChart(ticker);
+            loadExplainability(ticker);
+            
+            logMessage(`Selected ticker: ${ticker}`, 'info');
+        }
+
+        // Load sentiment chart
+        function loadSentimentChart(ticker, hours = 24) {
+            fetch(`/api/sentiment-chart/${ticker}?hours=${hours}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.chart) {
+                        const chartData = JSON.parse(data.chart);
+                        Plotly.newPlot('sentimentChart', chartData.data, chartData.layout, {responsive: true});
+                        charts.sentiment = true;
+                    } else {
+                        document.getElementById('sentimentChart').innerHTML = 
+                            '<div class="text-center text-muted p-4">No sentiment data available</div>';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading sentiment chart:', error);
+                    document.getElementById('sentimentChart').innerHTML = 
+                        '<div class="text-center text-danger p-4">Error loading sentiment chart</div>';
+                });
+        }
+
+        // Load market chart
+        function loadMarketChart(ticker) {
+            fetch(`/api/market-chart/${ticker}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.chart) {
+                        const chartData = JSON.parse(data.chart);
+                        Plotly.newPlot('marketChart', chartData.data, chartData.layout, {responsive: true});
+                        charts.market = true;
+                    } else {
+                        document.getElementById('marketChart').innerHTML = 
+                            '<div class="text-center text-muted p-4">No market data available</div>';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading market chart:', error);
+                    document.getElementById('marketChart').innerHTML = 
+                        '<div class="text-center text-danger p-4">Error loading market chart</div>';
+                });
+        }
+
+        // Load explainability data
+        function loadExplainability(ticker) {
+            fetch(`/api/explainability/${ticker}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.feature_contributions) {
+                        renderExplainability(data);
+                    } else {
+                        document.getElementById('explainabilityContent').innerHTML = 
+                            '<p class="text-muted text-center">No explainability data available</p>';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading explainability:', error);
+                    document.getElementById('explainabilityContent').innerHTML = 
+                        '<p class="text-danger text-center">Error loading explainability data</p>';
+                });
+        }
+
+        // Render explainability visualization
+        function renderExplainability(data) {
+            let html = `
+                <div class="mb-3">
+                    <h6>Prediction: <span class="badge bg-${getPredictionColor(data.prediction.prediction)}">${getPredictionLabel(data.prediction.prediction)}</span></h6>
+                    <small class="text-muted">Confidence: ${(data.prediction.confidence * 100).toFixed(1)}%</small>
+                </div>
+                <h6>Feature Contributions:</h6>
+            `;
+            
+            data.feature_contributions.forEach(feature => {
+                const isPositive = feature.contribution > 0;
+                const width = Math.abs(feature.contribution) * 200; // Scale for visualization
+                
+                html += `
+                    <div class="mb-2">
+                        <div class="d-flex justify-content-between">
+                            <small>${feature.feature}</small>
+                            <small>${feature.contribution.toFixed(3)}</small>
+                        </div>
+                        <div class="explainability-bar ${isPositive ? 'explainability-positive' : 'explainability-negative'}" 
+                             style="width: ${width}px; opacity: 0.7;"></div>
+                    </div>
+                `;
+            });
+            
+            html += `<small class="text-muted mt-2">${data.explanation}</small>`;
+            
+            document.getElementById('explainabilityContent').innerHTML = html;
+        }
+
+        // Stream control functions
+        function startStream() {
+            fetch('/api/start-stream')
+                .then(response => response.json())
+                .then(data => {
+                    logMessage(data.message, data.status === 'started' ? 'success' : 'warning');
+                    updateStreamStatus(true);
+                })
+                .catch(error => {
+                    logMessage('Error starting stream', 'error');
+                });
+        }
+
+        function stopStream() {
+            fetch('/api/stop-stream')
+                .then(response => response.json())
+                .then(data => {
+                    logMessage(data.message, data.status === 'stopped' ? 'success' : 'warning');
+                    updateStreamStatus(false);
+                })
+                .catch(error => {
+                    logMessage('Error stopping stream', 'error');
+                });
+        }
+
+        // Update functions
+        function updateConnectionStatus(connected) {
+            const statusElement = document.getElementById('connectionStatus');
+            const textElement = document.getElementById('connectionText');
+            
+            if (connected) {
+                statusElement.className = 'status-indicator status-healthy me-2';
+                textElement.textContent = 'Connected';
+            } else {
+                statusElement.className = 'status-indicator status-error me-2';
+                textElement.textContent = 'Disconnected';
+            }
+        }
+
+        function updateProcessingStats(stats) {
+            document.getElementById('messagesProcessed').textContent = stats.messages_processed || 0;
+            document.getElementById('processingRate').textContent = `${(stats.messages_per_second || 0).toFixed(1)}/sec`;
+        }
+
+        function updateSystemStatus(data) {
+            // Update connector statuses
+            updateConnectorStatus('newsStatus', data.connectors?.news?.connected);
+            updateConnectorStatus('marketStatus', data.connectors?.market?.connected);
+            updateConnectorStatus('socialStatus', data.connectors?.twitter?.connected);
+            
+            // Update model count
+            document.getElementById('activeModels').textContent = data.fusion_models?.total_models || 0;
+        }
+
+        function updateConnectorStatus(elementId, connected) {
+            const element = document.getElementById(elementId);
+            if (connected) {
+                element.className = 'status-indicator status-healthy';
+            } else {
+                element.className = 'status-indicator status-error';
+            }
+        }
+
+        function updateStreamStatus(running) {
+            const element = document.getElementById('streamStatus');
+            if (running) {
+                element.className = 'status-indicator status-healthy';
+            } else {
+                element.className = 'status-indicator status-error';
+            }
+        }
+
+        function updateTickerPrediction(ticker, prediction) {
+            const sentimentBadge = document.getElementById(`sentiment-${ticker}`);
+            const confidenceBadge = document.getElementById(`confidence-${ticker}`);
+            const predictionText = document.getElementById(`prediction-${ticker}`);
+            
+            if (sentimentBadge && prediction) {
+                const label = getPredictionLabel(prediction.prediction);
+                const color = getPredictionColor(prediction.prediction);
+                
+                sentimentBadge.textContent = label;
+                sentimentBadge.className = `badge bg-${color}`;
+                
+                confidenceBadge.textContent = `${(prediction.confidence * 100).toFixed(0)}%`;
+                
+                predictionText.textContent = `Predicted: ${label} (${(prediction.confidence * 100).toFixed(1)}% confidence)`;
+            }
+        }
+
+        // Utility functions
+        function getPredictionLabel(prediction) {
+            const labels = ['Bearish', 'Neutral', 'Bullish'];
+            return labels[prediction + 1] || 'Unknown';
+        }
+
+        function getPredictionColor(prediction) {
+            const colors = ['danger', 'secondary', 'success'];
+            return colors[prediction + 1] || 'secondary';
+        }
+
+        function logMessage(message, type = 'info') {
+            const logElement = document.getElementById('processingLog');
+            const timestamp = new Date().toLocaleTimeString();
+            const colorClass = {
+                'success': 'text-success',
+                'error': 'text-danger',
+                'warning': 'text-warning',
+                'info': 'text-info'
+            }[type] || 'text-muted';
+            
+            const logEntry = `<div class="${colorClass}">[${timestamp}] ${message}</div>`;
+            logElement.innerHTML = logEntry + logElement.innerHTML;
+            
+            // Limit log entries
+            const entries = logElement.children;
+            if (entries.length > 100) {
+                logElement.removeChild(entries[entries.length - 1]);
+            }
+        }
+
+        // Auto-refresh processing results
+        setInterval(function() {
+            if (selectedTicker) {
+                fetch('/api/processing-results')
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.results && data.results.length > 0) {
+                            data.results.slice(0, 5).forEach(result => {
+                                if (result.sentiment) {
+                                    logMessage(`${result.ticker || 'General'}: ${result.sentiment} (${(result.confidence * 100).toFixed(0)}%)`, 'info');
+                                }
+                            });
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error fetching processing results:', error);
+                    });
+            }
+        }, 10000); // Every 10 seconds
+    </script>
+</body>
+</html>
