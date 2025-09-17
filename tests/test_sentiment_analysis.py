@@ -1,5 +1,15 @@
 """
-Test suite for sentiment analysis components
+Test suite for sentiment analysis components.
+
+This module contains unit tests for the sentiment analysis functionality,
+including tests for the FinBERT analyzer, Lexicon analyzer, and the
+ensemble analyzer that combines multiple sentiment analysis approaches.
+
+The tests cover:
+- Basic functionality of each analyzer
+- Edge cases and error handling
+- Integration between different components
+- Performance characteristics
 """
 import unittest
 from unittest.mock import Mock, patch, MagicMock
@@ -14,7 +24,13 @@ from sentiment.lexicon_analyzer import LexiconAnalyzer
 from sentiment.ensemble_analyzer import EnsembleSentimentAnalyzer
 
 class TestSentimentAnalysis(unittest.TestCase):
-    """Test sentiment analysis components"""
+    """
+    Test suite for core sentiment analysis functionality.
+    
+    This class contains tests for the basic functionality of the sentiment
+    analysis components, including both individual analyzers and their
+    integration in the ensemble analyzer.
+    """
     
     def setUp(self):
         """Set up test fixtures"""
@@ -29,25 +45,58 @@ class TestSentimentAnalysis(unittest.TestCase):
     @patch('sentiment.finbert_analyzer.AutoTokenizer')
     @patch('sentiment.finbert_analyzer.AutoModelForSequenceClassification')
     def test_finbert_analyzer_initialization(self, mock_model, mock_tokenizer):
-        """Test FinBERT analyzer initialization"""
-        # Mock the model and tokenizer
-        mock_tokenizer.from_pretrained.return_value = Mock()
-        mock_model.from_pretrained.return_value = Mock()
+        """
+        Test FinBERT analyzer initialization and model loading.
         
+        Verifies that the FinBERT analyzer correctly initializes and loads
+        the required pre-trained models and tokenizers.
+        """
+        # Mock the model and tokenizer
+        mock_tokenizer_instance = Mock()
+        mock_tokenizer_instance.return_value = {
+            'input_ids': [1, 2, 3],
+            'attention_mask': [1, 1, 1]
+        }
+        mock_tokenizer.from_pretrained.return_value = mock_tokenizer_instance
+        
+        mock_model_instance = Mock()
+        mock_model_instance.return_value = {
+            'logits': [[0.1, 0.2, 0.7]]  # Mock logits for 3 classes
+        }
+        mock_model.from_pretrained.return_value = mock_model_instance
+        
+        # Test initialization
         analyzer = FinBERTAnalyzer()
         
+        # Verify model and tokenizer were loaded
         self.assertIsNotNone(analyzer)
-        self.assertTrue(mock_tokenizer.from_pretrained.called)
-        self.assertTrue(mock_model.from_pretrained.called)
+        mock_tokenizer.from_pretrained.assert_called_once()
+        mock_model.from_pretrained.assert_called_once()
+        
+        # Test model prediction
+        result = analyzer.analyze("Test text")
+        self.assertIn('label', result)
+        self.assertIn('score', result)
+        self.assertIn(result['label'], ['positive', 'negative', 'neutral'])
     
     def test_lexicon_analyzer_initialization(self):
-        """Test lexicon analyzer initialization"""
+        """
+        Test lexicon analyzer initialization and basic properties.
+        
+        Verifies that the lexicon analyzer is properly initialized with
+        the required word lists and can be instantiated correctly.
+        """
         analyzer = LexiconAnalyzer()
         
         self.assertIsNotNone(analyzer)
         self.assertIsInstance(analyzer.positive_words, set)
         self.assertIsInstance(analyzer.negative_words, set)
         self.assertGreater(len(analyzer.positive_words), 0)
+        self.assertGreater(len(analyzer.negative_words), 0)
+        
+        # Test that word lists are properly loaded
+        self.assertIn('bullish', analyzer.positive_words)
+        self.assertIn('bearish', analyzer.negative_words)
         self.assertGreater(len(analyzer.negative_words), 0)
     
     def test_lexicon_analyzer_sentiment_scoring(self):
@@ -156,16 +205,38 @@ class TestSentimentAnalysis(unittest.TestCase):
         self.assertGreater(result.confidence, 0)
 
 class TestSentimentEdgeCases(unittest.TestCase):
-    """Test edge cases and error handling"""
+    """
+    Test edge cases and error handling in sentiment analysis.
+    
+    This class contains tests that verify the behavior of the sentiment
+    analysis components when faced with unusual or unexpected inputs.
+    """
     
     def setUp(self):
         self.analyzer = LexiconAnalyzer()
     
     def test_empty_text(self):
-        """Test handling of empty text"""
-        result = self.analyzer.analyze_sentiment("")
-        self.assertEqual(result.sentiment, 0)  # Should be neutral
-        self.assertGreater(result.confidence, 0)
+        """
+        Test handling of empty text input.
+        
+        Verifies that the analyzer properly handles empty strings by returning
+        a neutral sentiment with zero score.
+        """
+        analyzer = EnsembleSentimentAnalyzer()
+        
+        # Test empty string
+        result = analyzer.analyze("")
+        self.assertEqual(result['label'], 'neutral')
+        self.assertEqual(result['score'], 0.0)
+        
+        # Test whitespace-only string
+        result = analyzer.analyze("   \n\t")
+        self.assertEqual(result['label'], 'neutral')
+        self.assertEqual(result['score'], 0.0)
+        
+        # Test None input
+        with self.assertRaises(ValueError):
+            analyzer.analyze(None)
     
     def test_very_long_text(self):
         """Test handling of very long text"""
