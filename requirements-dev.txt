@@ -19,10 +19,10 @@ mypy>=1.5.0,<2.0.0
 pre-commit>=3.3.0,<4.0.0
 
 # Documentation
-sphinx>=7.0.0,<8.0.0
-sphinx-rtd-theme>=1.2.0,<2.0.0
-sphinx-copybutton>=0.5.0,<1.0.0
-myst-parser>=1.0.0,<2.0.0  # For markdown support in Sphinx
+sphinx>=6.0.0  # More flexible version requirement
+sphinx-rtd-theme>=1.2.0  # Remove upper bound to avoid conflicts
+sphinx-copybutton>=0.5.0  # Remove upper bound to avoid conflicts
+myst-parser>=1.0.0  # More flexible version requirement
 
 # Jupyter for examples/notebooks
 jupyter>=1.0.0
