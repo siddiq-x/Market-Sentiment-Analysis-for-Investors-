@@ -312,51 +312,55 @@ class StreamProcessor:
             entities = self.ner_extractor.extract_entities(data_point.content)
             
             # Bot detection (for social media)
-            bot_score = None
             if message_type == 'social':
-                bot_score = self.bot_detector.detect_bot(
+                bot_detection = self.bot_detector.detect_bot(
                     data_point.content,
                     author_info=data_point.metadata.get('author_info'),
                     metadata=data_point.metadata
                 )
+                data_point.metadata['bot_detection'] = {
+                    'is_bot_likely': bot_detection.is_bot_likely,
+                    'confidence': bot_detection.confidence,
+                    'reasons': bot_detection.reasons,
+                    'credibility_adjustment': bot_detection.credibility_adjustment
+                }
+                
+                # Skip further processing for likely bot content
+                if bot_detection.is_bot_likely:
+                    self.logger.debug(f"Skipping likely bot content: {data_point.content[:100]}...")
+                    return None
             
             # Sentiment analysis
             sentiment_result = self.sentiment_analyzer.analyze_sentiment(
                 cleaned_text_obj.cleaned,
-                context={"source": data_point.source, "ticker": data_point.ticker}
+                ticker=data_point.ticker,
+                source=data_point.source
             )
             
-            # Store in cache for fusion processing
-            if self.redis_available and data_point.ticker:
-                cache_key = f"sentiment:{data_point.ticker}:{int(time.time())}"
-                cache_data = {
-                    "sentiment": sentiment_result.sentiment,
-                    "confidence": sentiment_result.confidence,
-                    "ensemble_score": sentiment_result.ensemble_score,
-                    "timestamp": sentiment_result.timestamp.isoformat()
-                }
-                self.redis_client.setex(cache_key, 3600, json.dumps(cache_data))  # 1 hour TTL
+            # Prepare entities for output
+            entity_list = [{
+                'text': e.text,
+                'label': e.label,
+                'confidence': e.confidence
+            } for e in entities]
             
-            processing_time = (time.time() - start_time) * 1000
+            # Create processing result
+            processing_time_ms = (time.time() - start_time) * 1000
             
             return ProcessingResult(
                 message_id=message.message_id,
                 original_data=data_point,
                 cleaned_text=cleaned_text_obj.cleaned,
-                entities=[{
-                    "text": e.text,
-                    "label": e.label,
-                    "confidence": e.confidence
-                } for e in entities],
+                entities=entity_list,
                 sentiment_result={
-                    "sentiment": sentiment_result.sentiment,
-                    "confidence": sentiment_result.confidence,
-                    "ensemble_score": sentiment_result.ensemble_score,
-                    "finbert_available": sentiment_result.finbert_result is not None,
-                    "lexicon_available": sentiment_result.lexicon_result is not None
+                    'sentiment': sentiment_result.sentiment,
+                    'confidence': sentiment_result.confidence,
+                    'ensemble_score': sentiment_result.ensemble_score,
+                    'finbert_available': sentiment_result.finbert_result is not None,
+                    'lexicon_available': sentiment_result.lexicon_result is not None
                 },
                 fusion_prediction=None,  # Will be added in batch processing
-                processing_time_ms=processing_time,
+                processing_time_ms=processing_time_ms,
                 timestamp=datetime.now()
             )
             
