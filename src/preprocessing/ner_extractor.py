@@ -18,6 +18,7 @@ except OSError:
     "en_core_web_sm"])
     nlp = spacy.load("en_core_web_sm")
 
+
 @dataclass
 class FinancialEntity:
     """Container for financial entities"""
@@ -27,6 +28,7 @@ class FinancialEntity:
     end: int
     confidence: float
     context: str
+
 
 class FinancialNER:
     """Named Entity Recognition specialized for financial content"""
@@ -127,8 +129,7 @@ class FinancialNER:
             'exchanges': [
                 'NYSE', 'NASDAQ', 'AMEX', 'LSE', 'TSE', 'HKSE', 'SSE', 'BSE',
                 'New York Stock Exchange', 'London Stock Exchange', 'Tokyo
-    Stock Exchange'
-            ],
+    Stock Exchange' ],
             'sectors': [
                 'Technology', 'Healthcare', 'Financial', 'Energy', 'Consumer',
     'Industrial',

@@ -187,6 +187,7 @@ def batch_sentiment_analysis(tickers, days_back=7):
 
     return results
 
+
 def generate_report(results, output_file=None):
     """Generate a comprehensive analysis report"""
 
@@ -308,6 +309,7 @@ def generate_report(results, output_file=None):
 
     return report_text
 
+
 def export_results(results, format='json', filename=None):
     """Export results in various formats"""
 
@@ -362,6 +364,7 @@ def export_results(results, format='json', filename=None):
 
     print(f"Results exported to {filename}")
     return filename
+
 
 def main():
     """Main batch analysis function"""

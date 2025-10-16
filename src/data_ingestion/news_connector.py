@@ -10,6 +10,7 @@ from urllib.parse import urlencode
 from .base_connector import BaseConnector, DataPoint
 from config.config import config
 
+
 class NewsConnector(BaseConnector):
     """Connector for NewsAPI financial news"""
 
@@ -135,9 +136,7 @@ class NewsConnector(BaseConnector):
 
         # Combine title and description for content
         content = f"{article.get('title', '')} {article.get('description',
-    '')}"
-
-        return DataPoint(
+    '')}" return DataPoint(
             source="NewsAPI",
             timestamp=datetime.fromisoformat(article["publishedAt"].replace("Z"
     , "+00:00")),

@@ -12,6 +12,7 @@ import os
 
 from config.config import config
 
+
 @dataclass
 class SentimentResult:
     """Container for sentiment analysis results"""
@@ -21,6 +22,7 @@ class SentimentResult:
     scores: Dict[str, float]  # Raw scores for each class
     timestamp: datetime
     metadata: Dict[str, Any]
+
 
 class FinBERTAnalyzer:
     """FinBERT-based sentiment analyzer for financial content"""
@@ -81,8 +83,7 @@ class FinBERTAnalyzer:
                 self.logger.info("Attempting fallback to
     distilbert-base-uncased-finetuned-sst-2-english")
                 self.model_name = "distilbert-base-uncased-finetuned-sst-2-engl
-    ish"
-                self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
+    ish" self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
                 self.model = AutoModelForSequenceClassification.from_pretrained
     (self.model_name)
                 self.model.to(self.device)

@@ -37,12 +37,14 @@ dashboard_state = {
     "active_tickers": config.monitored_tickers[:10]  # Limit for dashboard
 }
 
+
 @app.route('/')
 def index():
     """Main dashboard page"""
     return render_template('dashboard.html',
                          tickers=dashboard_state["active_tickers"],
                          config=config.__dict__)
+
 
 @app.route('/api/status')
 def get_status():
@@ -67,6 +69,7 @@ def get_status():
         })
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
+
 
 @app.route('/api/sentiment/<ticker>')
 def get_sentiment_data(ticker):
@@ -101,6 +104,7 @@ def get_sentiment_data(ticker):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+
 @app.route('/api/predictions')
 def get_predictions():
     """Get current predictions for all active tickers"""
@@ -116,6 +120,7 @@ def get_predictions():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 
 @app.route('/api/market-data/<ticker>')
 def get_market_data(ticker):
@@ -153,6 +158,7 @@ def get_market_data(ticker):
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 
 @app.route('/api/sentiment-chart/<ticker>')
 def get_sentiment_chart(ticker):
@@ -231,6 +237,7 @@ def get_sentiment_chart(ticker):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+
 @app.route('/api/market-chart/<ticker>')
 def get_market_chart(ticker):
     """Generate market chart for a ticker"""
@@ -290,6 +297,7 @@ def get_market_chart(ticker):
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 
 @app.route('/api/start-stream')
 def start_stream():
@@ -399,8 +407,7 @@ def get_explainability_data(ticker):
             "feature_contributions": feature_contributions,
             "explanation": f"The model predicts {['bearish', 'neutral',
     'bullish'][prediction['prediction'] + 1]} sentiment for {ticker} based on
-    the feature contributions shown above."
-        })
+    the feature contributions shown above." })
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500

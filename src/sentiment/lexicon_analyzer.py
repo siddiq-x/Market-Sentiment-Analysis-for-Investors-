@@ -9,6 +9,7 @@ import re
 import json
 import os
 
+
 @dataclass
 class LexiconSentimentResult:
     """Container for lexicon-based sentiment results"""
@@ -19,6 +20,7 @@ class LexiconSentimentResult:
     matched_words: List[str]
     timestamp: datetime
     metadata: Dict[str, Any]
+
 
 class FinancialLexiconAnalyzer:
     """Lexicon-based sentiment analyzer using financial dictionaries"""

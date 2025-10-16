@@ -4,17 +4,16 @@ This script demonstrates basic usage of the system components
 """
 import sys
 import os
-from datetime import datetime, timedelta
-import asyncio
 
 # Add src to path
-sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))  # noqa: E402
 
-from data_ingestion.ingestion_manager import IngestionManager
-from sentiment.ensemble_analyzer import EnsembleSentimentAnalyzer
-from fusion.fusion_manager import FusionManager
-from preprocessing.text_cleaner import TextCleaner
-from preprocessing.ner_extractor import NERExtractor
+from data_ingestion.ingestion_manager import IngestionManager  # noqa: E402
+from sentiment.ensemble_analyzer import EnsembleSentimentAnalyzer  # noqa: E402
+from fusion.fusion_manager import FusionManager  # noqa: E402
+from preprocessing.text_cleaner import TextCleaner  # noqa: E402
+from preprocessing.ner_extractor import NERExtractor  # noqa: E402
+
 
 def basic_sentiment_analysis():
     """Demonstrate basic sentiment analysis"""
@@ -25,10 +24,8 @@ def basic_sentiment_analysis():
 
     # Sample financial texts
     sample_texts = [
-        "Apple reports record quarterly earnings, beating analyst
-    expectations",
-        "Tesla stock plummets amid production concerns and supply chain
-    issues",
+        "Apple reports record quarterly earnings, beating analyst expectations",
+        "Tesla stock plummets amid production concerns and supply chain issues",
         "Microsoft maintains steady growth in cloud computing segment",
         "Market volatility increases due to geopolitical tensions",
         "Strong GDP growth signals economic recovery"
@@ -39,13 +36,12 @@ def basic_sentiment_analysis():
 
     for text in sample_texts:
         result = analyzer.analyze_sentiment(text)
-        sentiment_label = {-1: "Bearish", 0: "Neutral", 1:
-    "Bullish"}[result.sentiment]
+        sentiment_label = {-1: "Bearish", 0: "Neutral", 1: "Bullish"}[result.sentiment]
 
         print(f"Text: {text[:60]}...")
-        print(f"Sentiment: {sentiment_label} (Score:
-    {result.ensemble_score:.3f}, Confidence: {result.confidence:.3f})")
+        print(f"Sentiment: {sentiment_label} (Score: {result.ensemble_score:.3f}, Confidence: {result.confidence:.3f})")
         print()
+
 
 def data_ingestion_demo():
     """Demonstrate data ingestion (simulated)"""
@@ -73,12 +69,12 @@ def data_ingestion_demo():
                 print(f"Content: {dp.content[:100]}...")
                 print(f"Credibility: {dp.credibility_score:.2f}")
         else:
-            print("No data points fetched (check API keys and network
-    connection)")
+            print("No data points fetched (check API keys and network connection)")
 
     except Exception as e:
         print(f"Error during data ingestion: {str(e)}")
         print("This is expected if API keys are not configured")
+
 
 def text_preprocessing_demo():
     """Demonstrate text preprocessing"""
@@ -112,6 +108,7 @@ def text_preprocessing_demo():
         if entity_list:
             print(f"{entity_type}: {', '.join(entity_list)}")
 
+
 def fusion_model_demo():
     """Demonstrate fusion model (training simulation)"""
     print("=== Fusion Model Demo ===")
@@ -120,8 +117,7 @@ def fusion_model_demo():
     fusion_manager = FusionManager()
 
     print("Fusion model initialized")
-    print("Note: Actual training requires historical market data and sentiment
-    data")
+    print("Note: Actual training requires historical market data and sentiment data")
     print("This demo shows the model architecture and capabilities")
 
     # Show model summary
@@ -129,19 +125,18 @@ def fusion_model_demo():
         model_info = fusion_manager.get_model_summary()
         print(f"\nModel Summary:")
         print(f"Input features: {model_info.get('input_features', 'N/A')}")
-        print(f"Model type: {model_info.get('model_type', 'LSTM with
-    Attention')}")
+        print(f"Model type: {model_info.get('model_type', 'LSTM with Attention')}")
         print(f"Parameters: {model_info.get('total_params', 'N/A')}")
     except Exception as e:
         print(f"Model summary not available: {str(e)}")
+
 
 def end_to_end_demo():
     """Demonstrate end-to-end pipeline"""
     print("=== End-to-End Pipeline Demo ===")
 
     # Sample pipeline workflow
-    sample_news = "Apple Inc. reported strong quarterly results with revenue
-    growth of 15%"
+    sample_news = "Apple Inc. reported strong quarterly results with revenue growth of 15%"
 
     print(f"Processing: {sample_news}")
     print("\nPipeline steps:")
@@ -159,16 +154,15 @@ def end_to_end_demo():
     # Step 3: Sentiment analysis
     analyzer = EnsembleSentimentAnalyzer()
     sentiment = analyzer.analyze_sentiment(cleaned)
-    sentiment_label = {-1: "Bearish", 0: "Neutral", 1:
-    "Bullish"}[sentiment.sentiment]
-    print(f"3. Sentiment Analysis: {sentiment_label} (Score:
-    {sentiment.ensemble_score:.3f})")
+    sentiment_label = {-1: "Bearish", 0: "Neutral", 1: "Bullish"}[sentiment.sentiment]
+    print(f"3. Sentiment Analysis: {sentiment_label} (Score: {sentiment.ensemble_score:.3f})")
 
     # Step 4: Feature preparation (simulated)
     print("4. Feature Engineering: Combining sentiment with market data...")
 
     # Step 5: Prediction (simulated)
     print("5. Price Movement Prediction: [Simulated - requires trained model]")
+
 
 def main():
     """Main demo function"""
@@ -197,6 +191,7 @@ def main():
 
         if i < len(demos):
             input("Press Enter to continue to next demo...")
+
 
 if __name__ == "__main__":
     main()

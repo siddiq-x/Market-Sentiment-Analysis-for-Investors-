@@ -14,6 +14,7 @@ from .lstm_model import MultimodalFusionEngine, ModelConfig, TrainingConfig,
 from ..data_ingestion.base_connector import DataPoint
 from ..sentiment.ensemble_analyzer import EnsembleSentimentResult
 
+
 @dataclass
 class FusionPrediction:
     """Container for fusion prediction results"""
@@ -24,6 +25,7 @@ class FusionPrediction:
     contributing_factors: Dict[str, float]
     timestamp: datetime
     horizon_hours: int
+
 
 class FusionManager:
     """Main manager for multimodal fusion pipeline"""

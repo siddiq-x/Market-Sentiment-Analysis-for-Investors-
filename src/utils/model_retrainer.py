@@ -18,6 +18,7 @@ from ..sentiment.ensemble_analyzer import EnsembleSentimentAnalyzer
 from ..data_ingestion.ingestion_manager import ingestion_manager
 from config.config import config
 
+
 @dataclass
 class ModelPerformanceMetrics:
     """Container for model performance metrics"""
@@ -30,6 +31,7 @@ class ModelPerformanceMetrics:
     correct_predictions: int
     timestamp: datetime
 
+
 @dataclass
 class RetrainingJob:
     """Container for retraining job information"""
@@ -39,6 +41,7 @@ class RetrainingJob:
     reason: str
     data_points_required: int
     estimated_duration_minutes: int
+
 
 class ModelRetrainer:
     """Handles continuous learning and model retraining"""
@@ -298,8 +301,7 @@ class ModelRetrainer:
                 ticker=ticker,
                 priority='low',
                 reason="Insufficient recent predictions for reliable
-    evaluation"
-            )
+    evaluation" )
 
         self.logger.info(f"Model performance for {ticker}:
     Accuracy={metrics.accuracy:.3f}, F1={metrics.f1_score:.3f}")

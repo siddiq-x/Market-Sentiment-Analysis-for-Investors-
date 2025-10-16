@@ -15,6 +15,7 @@ import json
 
 from .feature_engineer import FeatureSet
 
+
 @dataclass
 class ModelConfig:
     """Configuration for LSTM model"""
@@ -26,6 +27,7 @@ class ModelConfig:
     attention: bool = True
     output_size: int = 3  # 3 classes: negative, neutral, positive
 
+
 @dataclass
 class TrainingConfig:
     """Configuration for model training"""
@@ -36,6 +38,7 @@ class TrainingConfig:
     validation_split: float = 0.2
     weight_decay: float = 1e-5
 
+
 @dataclass
 class PredictionResult:
     """Container for model predictions"""
@@ -44,6 +47,7 @@ class PredictionResult:
     confidence: np.ndarray
     timestamps: List[datetime]
     metadata: Dict[str, Any]
+
 
 class FinancialDataset(Dataset):
     """PyTorch dataset for financial time series data"""
@@ -57,6 +61,7 @@ class FinancialDataset(Dataset):
 
     def __getitem__(self, idx):
         return self.features[idx], self.targets[idx]
+
 
 class AttentionLayer(nn.Module):
     """Attention mechanism for LSTM"""
@@ -76,6 +81,7 @@ class AttentionLayer(nn.Module):
         # attended_output shape: (batch_size, hidden_size)
 
         return attended_output, attention_weights
+
 
 class LSTMFusionModel(nn.Module):
     """LSTM-based multimodal fusion model"""
@@ -147,6 +153,7 @@ class LSTMFusionModel(nn.Module):
         predictions = self.classifier(final_output)
 
         return predictions
+
 
 class MultimodalFusionEngine:
     """Main engine for multimodal fusion and prediction"""
@@ -252,8 +259,7 @@ class MultimodalFusionEngine:
                 self.logger.info(
                     f"Epoch {epoch}: Train Loss: {train_loss:.4f}, "
                     f"Val Loss: {val_loss:.4f}, Train Acc: {train_acc:.4f},
-    Val Acc: {val_acc:.4f}"
-                )
+    Val Acc: {val_acc:.4f}" )
 
             if patience_counter >= self.training_config.early_stopping_patience
     :

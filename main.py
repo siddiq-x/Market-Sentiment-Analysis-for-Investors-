@@ -51,6 +51,7 @@ logging.basicConfig(
 
 logger = logging.getLogger("main")
 
+
 class MarketSentimentSystem:
     """
     Main orchestrator for the Market Sentiment Analysis System.
@@ -132,14 +133,12 @@ class MarketSentimentSystem:
         missing_config = config.validate()
         if missing_config:
             self.logger.warning(f"Missing configuration: {missing_config}")
-            self.logger.warning("Some features may not work without proper API
-    keys")
+            self.logger.warning("Some features may not work without proper API keys")
 
         # Validate data connectors
         validation_results = ingestion_manager.validate_configuration()
         if validation_results:
-            self.logger.warning(f"Connector validation issues:
-    {validation_results}")
+            self.logger.warning(f"Connector validation issues: {validation_results}")
 
         self.logger.info("Configuration validation completed")
 
@@ -307,8 +306,7 @@ class MarketSentimentSystem:
                         self.logger.info(
                             f"Sentiment for {data_point.ticker or 'General'}: "
                             f"{result.sentiment} (confidence:
-    {result.confidence:.3f})"
-                        )
+    {result.confidence:.3f})" )
 
                     except Exception as e:
                         self.logger.error(f"Error analyzing sentiment:

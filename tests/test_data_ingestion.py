@@ -2,19 +2,20 @@
 Test suite for data ingestion components
 """
 import unittest
-from unittest.mock import Mock, patch, MagicMock
-from datetime import datetime, timedelta
+from unittest.mock import Mock, patch
+from datetime import datetime
 import sys
 import os
 
 # Add src to path
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
 
-from data_ingestion.base_connector import BaseConnector, DataPoint  # noqa: E402
+from data_ingestion.base_connector import DataPoint  # noqa: E402
 from data_ingestion.news_connector import NewsConnector  # noqa: E402
 from data_ingestion.market_connector import MarketConnector  # noqa: E402
 from data_ingestion.social_connector import TwitterConnector, RedditConnector  # noqa: E402
 from data_ingestion.ingestion_manager import IngestionManager  # noqa: E402
+
 
 class TestDataPoint(unittest.TestCase):
     """Test DataPoint class"""
@@ -55,6 +56,7 @@ class TestDataPoint(unittest.TestCase):
 
         self.assertGreater(dp_high.credibility_score, dp_low.credibility_score)
 
+
 class TestNewsConnector(unittest.TestCase):
     """Test NewsConnector"""
 
@@ -86,6 +88,7 @@ class TestNewsConnector(unittest.TestCase):
             self.assertIsInstance(data_points[0], DataPoint)
             self.assertEqual(data_points[0].ticker, 'AAPL')
 
+
 class TestMarketConnector(unittest.TestCase):
     """Test MarketConnector"""
 
@@ -111,6 +114,7 @@ class TestMarketConnector(unittest.TestCase):
         if data_points:
             self.assertIsInstance(data_points[0], DataPoint)
             self.assertEqual(data_points[0].ticker, 'AAPL')
+
 
 class TestSocialConnector(unittest.TestCase):
     """Test Social Media Connectors"""
@@ -165,6 +169,7 @@ class TestSocialConnector(unittest.TestCase):
         data_points = connector.fetch_data(['AAPL'], hours_back=24)
 
         self.assertIsInstance(data_points, list)
+
 
 class TestIngestionManager(unittest.TestCase):
     """Test IngestionManager"""
@@ -251,6 +256,7 @@ class TestIngestionManager(unittest.TestCase):
         # Test CSV export
         csv_result = self.manager.export_data(data_points, format='csv')
         self.assertIsInstance(csv_result, str)
+
 
 class TestErrorHandling(unittest.TestCase):
     """Test error handling in data ingestion"""

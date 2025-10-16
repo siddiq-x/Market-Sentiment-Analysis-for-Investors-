@@ -14,6 +14,7 @@ from .market_connector import MarketConnector
 from .social_connector import SocialConnector, RedditConnector
 from config.config import config
 
+
 class IngestionManager:
     """Manages all data ingestion connectors"""
 

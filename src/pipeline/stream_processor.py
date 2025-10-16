@@ -23,6 +23,7 @@ from ..sentiment.ensemble_analyzer import EnsembleSentimentAnalyzer
 from ..fusion.fusion_manager import FusionManager
 from config.config import config
 
+
 @dataclass
 class StreamMessage:
     """Container for stream messages"""
@@ -31,6 +32,7 @@ class StreamMessage:
     data: Dict[str, Any]
     timestamp: datetime
     processed: bool = False
+
 
 @dataclass
 class ProcessingResult:
@@ -43,6 +45,7 @@ class ProcessingResult:
     fusion_prediction: Optional[Dict[str, Any]]
     processing_time_ms: float
     timestamp: datetime
+
 
 class KafkaSimulator:
     """Simulates Kafka streaming for development/testing"""

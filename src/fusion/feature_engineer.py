@@ -12,6 +12,7 @@ from sklearn.feature_selection import SelectKBest, f_regression
 import warnings
 warnings.filterwarnings('ignore')
 
+
 @dataclass
 class FeatureSet:
     """Container for engineered features"""
@@ -20,6 +21,7 @@ class FeatureSet:
     target: Optional[np.ndarray]
     timestamps: List[datetime]
     metadata: Dict[str, Any]
+
 
 class MultimodalFeatureEngineer:
     """Feature engineering for combining sentiment and market data"""

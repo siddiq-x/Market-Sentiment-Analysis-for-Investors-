@@ -10,6 +10,7 @@ import numpy as np
 from .finbert_analyzer import FinBERTAnalyzer, SentimentResult
 from .lexicon_analyzer import FinancialLexiconAnalyzer, LexiconSentimentResult
 
+
 @dataclass
 class EnsembleSentimentResult:
     """Container for ensemble sentiment analysis results"""
@@ -22,6 +23,7 @@ class EnsembleSentimentResult:
     weights: Dict[str, float]
     timestamp: datetime
     metadata: Dict[str, Any]
+
 
 class EnsembleSentimentAnalyzer:
     """Ensemble analyzer combining multiple sentiment analysis approaches"""

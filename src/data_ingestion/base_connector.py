@@ -7,6 +7,7 @@ from datetime import datetime
 import logging
 from dataclasses import dataclass
 
+
 @dataclass
 class DataPoint:
     """Standard data point structure"""
@@ -16,6 +17,7 @@ class DataPoint:
     metadata: Dict[str, Any]
     ticker: Optional[str] = None
     credibility_score: float = 1.0
+
 
 class BaseConnector(ABC):
     """Base class for all data connectors"""
@@ -29,17 +31,14 @@ class BaseConnector(ABC):
     @abstractmethod
     def connect(self) -> bool:
         """Establish connection to data source"""
-        pass
 
     @abstractmethod
     def fetch_data(self, **kwargs) -> List[DataPoint]:
         """Fetch data from the source"""
-        pass
 
     @abstractmethod
     def is_healthy(self) -> bool:
         """Check if connection is healthy"""
-        pass
 
     def disconnect(self):
         """Disconnect from data source"""

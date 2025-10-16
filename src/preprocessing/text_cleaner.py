@@ -25,6 +25,7 @@ except LookupError:
     nltk.download('wordnet', quiet=True)
     nltk.download('averaged_perceptron_tagger', quiet=True)
 
+
 @dataclass
 class CleanedText:
     """Container for cleaned text data"""
@@ -33,6 +34,7 @@ class CleanedText:
     tokens: List[str]
     sentences: List[str]
     metadata: Dict[str, Any]
+
 
 class TextCleaner:
     """Advanced text cleaning for financial content"""
@@ -81,8 +83,7 @@ class TextCleaner:
         # URLs
         self.url_pattern = re.compile(
             r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F
-    ][0-9a-fA-F]))+'
-        )
+    ][0-9a-fA-F]))+' )
 
         # Email addresses
         self.email_pattern = re.compile(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[

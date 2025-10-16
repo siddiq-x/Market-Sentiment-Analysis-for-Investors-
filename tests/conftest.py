@@ -11,6 +11,8 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__),
     '..')))
 
 # Fixtures for testing
+
+
 @pytest.fixture
 def sample_news_data():
     """Sample news data for testing."""
@@ -20,6 +22,7 @@ def sample_news_data():
         "source": "Financial Times",
         "published_at": "2025-01-01T12:00:00Z"
     }
+
 
 @pytest.fixture
 def sample_tweet_data():

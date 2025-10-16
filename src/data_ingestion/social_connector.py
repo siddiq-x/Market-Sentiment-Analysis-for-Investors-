@@ -11,6 +11,7 @@ import re
 from .base_connector import BaseConnector, DataPoint
 from config.config import config
 
+
 class SocialConnector(BaseConnector):
     """Connector for Twitter/X financial discussions"""
 
@@ -108,8 +109,7 @@ class SocialConnector(BaseConnector):
         # Ticker-specific queries
         for ticker in tickers[:5]:  # Limit to avoid API quota
             query = f"${ticker} OR {ticker} (stock OR price OR earnings OR buy
-    OR sell) -is:retweet lang:en"
-            queries.append((query, ticker))
+    OR sell) -is:retweet lang:en" queries.append((query, ticker))
 
         # General financial queries
         general_queries = [

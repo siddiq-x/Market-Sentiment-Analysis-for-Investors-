@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 import hashlib
 
+
 @dataclass
 class BotScore:
     """Container for bot detection results"""
@@ -15,6 +16,7 @@ class BotScore:
     confidence: float
     reasons: List[str]
     credibility_adjustment: float
+
 
 class BotDetector:
     """Detect bots and assign credibility scores to social media content"""

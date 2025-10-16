@@ -11,6 +11,7 @@ import time
 from .base_connector import BaseConnector, DataPoint
 from config.config import config
 
+
 class MarketConnector(BaseConnector):
     """Connector for market data using Yahoo Finance and Alpha Vantage"""
 
@@ -72,8 +73,7 @@ class MarketConnector(BaseConnector):
                         # Create content string with OHLCV data
                         content = (f"Stock {ticker}: Open=${row['Open']:.2f}, "
                                  f"High=${row['High']:.2f},
-    Low=${row['Low']:.2f}, "
-                                 f"Close=${row['Close']:.2f},
+    Low=${row['Low']:.2f}, " f"Close=${row['Close']:.2f},
     Volume={int(row['Volume'])}")
 
                         # Calculate price change
@@ -150,9 +150,7 @@ class MarketConnector(BaseConnector):
                     if "data" in data:
                         for point in data["data"][:10]:  # Last 10 data points
                             content = f"{indicator_name}: {point.get('value',
-    'N/A')}"
-
-                            data_point = DataPoint(
+    'N/A')}" data_point = DataPoint(
                                 source="AlphaVantage",
                                 timestamp=datetime.strptime(point["date"],
     "%Y-%m-%d"),
