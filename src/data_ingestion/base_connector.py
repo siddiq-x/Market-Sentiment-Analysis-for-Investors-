@@ -19,33 +19,33 @@ class DataPoint:
 
 class BaseConnector(ABC):
     """Base class for all data connectors"""
-    
+
     def __init__(self, name: str, config: Dict[str, Any]):
         self.name = name
         self.config = config
         self.logger = logging.getLogger(f"connector.{name}")
         self._is_connected = False
-    
+
     @abstractmethod
     def connect(self) -> bool:
         """Establish connection to data source"""
         pass
-    
+
     @abstractmethod
     def fetch_data(self, **kwargs) -> List[DataPoint]:
         """Fetch data from the source"""
         pass
-    
+
     @abstractmethod
     def is_healthy(self) -> bool:
         """Check if connection is healthy"""
         pass
-    
+
     def disconnect(self):
         """Disconnect from data source"""
         self._is_connected = False
         self.logger.info(f"Disconnected from {self.name}")
-    
+
     def get_credibility_score(self, source_info: Dict[str, Any]) -> float:
         """Calculate credibility score for a source"""
         # Base implementation - can be overridden
@@ -59,6 +59,6 @@ class BaseConnector(ABC):
             'twitter.com': 0.60,
             'reddit.com': 0.50
         }
-        
+
         domain = source_info.get('domain', '').lower()
         return domain_scores.get(domain, 0.70)  # Default score

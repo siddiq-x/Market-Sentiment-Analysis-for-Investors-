@@ -202,14 +202,14 @@ def generate_report(results, output_file=None):
     report.append("-" * 30)
 
     total_data_points = sum(
-        r.get('total_data_points', 0) 
-        for r in results.values() 
+        r.get('total_data_points', 0)
+        for r in results.values()
         if 'error' not in r
     )
-    
+
     valid_results = [r for r in results.values() if 'error' not in r]
     avg_sentiment = (
-        sum(r.get('overall_sentiment_score', 0) for r in valid_results) / 
+        sum(r.get('overall_sentiment_score', 0) for r in valid_results) /
         len(valid_results) if valid_results else 0
     )
 
@@ -258,7 +258,7 @@ def generate_report(results, output_file=None):
             report.append(f"  Top Sources:")
             sorted_sources = sorted(
                 data['source_breakdown'].items(),
-                key=lambda x: x[1], 
+                key=lambda x: x[1],
                 reverse=True
             )
             for source, count in sorted_sources[:3]:
@@ -268,7 +268,7 @@ def generate_report(results, output_file=None):
         if data['entities'].get('ORGANIZATION'):
             top_orgs = sorted(
                 data['entities']['ORGANIZATION'].items(),
-                key=lambda x: x[1], 
+                key=lambda x: x[1],
                 reverse=True
             )[:3]
             report.append(
@@ -282,8 +282,8 @@ def generate_report(results, output_file=None):
     # Sort tickers by sentiment
     sorted_tickers = sorted(
         [
-            (ticker, data) 
-            for ticker, data in results.items() 
+            (ticker, data)
+            for ticker, data in results.items()
             if 'error' not in data
         ],
         key=lambda x: x[1]['overall_sentiment_score'],

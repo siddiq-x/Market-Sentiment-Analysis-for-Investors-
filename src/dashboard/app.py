@@ -40,7 +40,7 @@ dashboard_state = {
 @app.route('/')
 def index():
     """Main dashboard page"""
-    return render_template('dashboard.html', 
+    return render_template('dashboard.html',
                          tickers=dashboard_state["active_tickers"],
                          config=config.__dict__)
 
@@ -50,13 +50,13 @@ def get_status():
     try:
         # Get connector status
         connector_status = ingestion_manager.get_connector_status()
-        
+
         # Get stream processor stats
         stream_stats = stream_processor.get_processing_stats()
-        
+
         # Get fusion manager status
         fusion_status = fusion_manager.get_model_status()
-        
+
         return jsonify({
             "status": "healthy",
             "timestamp": datetime.now().isoformat(),
@@ -73,13 +73,15 @@ def get_sentiment_data(ticker):
     """Get sentiment data for a specific ticker"""
     try:
         hours_back = request.args.get('hours', 24, type=int)
-        
+
         # Get recent sentiment data
-        sentiment_data = stream_processor.get_recent_sentiment_data(ticker, hours_back)
-        
+        sentiment_data = stream_processor.get_recent_sentiment_data(ticker,
+    hours_back)
+
         if not sentiment_data:
-            return jsonify({"message": "No sentiment data available", "data": []})
-        
+            return jsonify({"message": "No sentiment data available", "data":
+    []})
+
         # Process data for visualization
         processed_data = []
         for item in sentiment_data:
@@ -89,13 +91,13 @@ def get_sentiment_data(ticker):
                 "confidence": item["confidence"],
                 "ensemble_score": item["ensemble_score"]
             })
-        
+
         return jsonify({
             "ticker": ticker,
             "data": processed_data,
             "count": len(processed_data)
         })
-        
+
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -104,14 +106,14 @@ def get_predictions():
     """Get current predictions for all active tickers"""
     try:
         predictions = {}
-        
+
         for ticker in dashboard_state["active_tickers"]:
             prediction = stream_processor.trigger_fusion_prediction(ticker)
             if prediction:
                 predictions[ticker] = prediction
-        
+
         return jsonify(predictions)
-        
+
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -121,15 +123,15 @@ def get_market_data(ticker):
     try:
         # Fetch recent market data
         market_data = ingestion_manager.fetch_by_connector(
-            'market', 
-            tickers=[ticker], 
-            period="1d", 
+            'market',
+            tickers=[ticker],
+            period="1d",
             interval="1h"
         )
-        
+
         if not market_data:
             return jsonify({"message": "No market data available", "data": []})
-        
+
         # Process data for visualization
         processed_data = []
         for data_point in market_data[-24:]:  # Last 24 hours
@@ -142,13 +144,13 @@ def get_market_data(ticker):
                     "close": data_point.metadata.get('close'),
                     "volume": data_point.metadata.get('volume')
                 })
-        
+
         return jsonify({
             "ticker": ticker,
             "data": processed_data,
             "count": len(processed_data)
         })
-        
+
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -157,19 +159,20 @@ def get_sentiment_chart(ticker):
     """Generate sentiment chart for a ticker"""
     try:
         hours_back = request.args.get('hours', 24, type=int)
-        sentiment_data = stream_processor.get_recent_sentiment_data(ticker, hours_back)
-        
+        sentiment_data = stream_processor.get_recent_sentiment_data(ticker,
+    hours_back)
+
         if not sentiment_data:
             return jsonify({"error": "No data available"})
-        
+
         # Prepare data for Plotly
         timestamps = [item["timestamp"] for item in sentiment_data]
         ensemble_scores = [item["ensemble_score"] for item in sentiment_data]
         confidences = [item["confidence"] for item in sentiment_data]
-        
+
         # Create Plotly figure
         fig = go.Figure()
-        
+
         # Add sentiment score line
         fig.add_trace(go.Scatter(
             x=timestamps,
@@ -182,7 +185,7 @@ def get_sentiment_chart(ticker):
                          'Score: %{y:.3f}<br>' +
                          '<extra></extra>'
         ))
-        
+
         # Add confidence as secondary y-axis
         fig.add_trace(go.Scatter(
             x=timestamps,
@@ -196,7 +199,7 @@ def get_sentiment_chart(ticker):
                          'Confidence: %{y:.3f}<br>' +
                          '<extra></extra>'
         ))
-        
+
         # Update layout
         fig.update_layout(
             title=f'Sentiment Analysis - {ticker}',
@@ -216,15 +219,15 @@ def get_sentiment_chart(ticker):
             template='plotly_white',
             height=400
         )
-        
+
         # Add horizontal lines for sentiment thresholds
         fig.add_hline(y=0, line_dash="dot", line_color="gray", opacity=0.5)
         fig.add_hline(y=0.1, line_dash="dot", line_color="green", opacity=0.3)
         fig.add_hline(y=-0.1, line_dash="dot", line_color="red", opacity=0.3)
-        
+
         graphJSON = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
         return jsonify({"chart": graphJSON})
-        
+
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -234,15 +237,15 @@ def get_market_chart(ticker):
     try:
         # Get market data
         market_data = ingestion_manager.fetch_by_connector(
-            'market', 
-            tickers=[ticker], 
-            period="1d", 
+            'market',
+            tickers=[ticker],
+            period="1d",
             interval="1h"
         )
-        
+
         if not market_data:
             return jsonify({"error": "No market data available"})
-        
+
         # Process data
         price_data = []
         for data_point in market_data[-24:]:  # Last 24 hours
@@ -255,13 +258,13 @@ def get_market_chart(ticker):
                     "close": data_point.metadata.get('close'),
                     "volume": data_point.metadata.get('volume')
                 })
-        
+
         if not price_data:
             return jsonify({"error": "No valid price data"})
-        
+
         # Create candlestick chart
         fig = go.Figure()
-        
+
         fig.add_trace(go.Candlestick(
             x=[item["timestamp"] for item in price_data],
             open=[item["open"] for item in price_data],
@@ -272,7 +275,7 @@ def get_market_chart(ticker):
             increasing_line_color='green',
             decreasing_line_color='red'
         ))
-        
+
         fig.update_layout(
             title=f'Price Chart - {ticker}',
             xaxis_title='Time',
@@ -281,10 +284,10 @@ def get_market_chart(ticker):
             height=400,
             xaxis_rangeslider_visible=False
         )
-        
+
         graphJSON = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
         return jsonify({"chart": graphJSON})
-        
+
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -295,9 +298,11 @@ def start_stream():
         if not dashboard_state["stream_processor_running"]:
             stream_processor.start()
             dashboard_state["stream_processor_running"] = True
-            return jsonify({"status": "started", "message": "Stream processor started successfully"})
+            return jsonify({"status": "started", "message": "Stream processor
+    started successfully"})
         else:
-            return jsonify({"status": "already_running", "message": "Stream processor is already running"})
+            return jsonify({"status": "already_running", "message": "Stream
+    processor is already running"})
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
@@ -308,9 +313,11 @@ def stop_stream():
         if dashboard_state["stream_processor_running"]:
             stream_processor.stop()
             dashboard_state["stream_processor_running"] = False
-            return jsonify({"status": "stopped", "message": "Stream processor stopped successfully"})
+            return jsonify({"status": "stopped", "message": "Stream processor
+    stopped successfully"})
         else:
-            return jsonify({"status": "not_running", "message": "Stream processor is not running"})
+            return jsonify({"status": "not_running", "message": "Stream
+    processor is not running"})
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
@@ -319,26 +326,30 @@ def get_processing_results():
     """Get recent processing results"""
     try:
         results = stream_processor.get_processed_results(max_results=50)
-        
+
         processed_results = []
         for result in results:
             processed_results.append({
                 "message_id": result.message_id,
                 "source": result.original_data.source,
                 "ticker": result.original_data.ticker,
-                "content_preview": result.original_data.content[:100] + "..." if len(result.original_data.content) > 100 else result.original_data.content,
-                "sentiment": result.sentiment_result.get("sentiment") if result.sentiment_result else None,
-                "confidence": result.sentiment_result.get("confidence") if result.sentiment_result else None,
+                "content_preview": result.original_data.content[:100] + "..."
+    if len(result.original_data.content) > 100 else
+    result.original_data.content,
+                "sentiment": result.sentiment_result.get("sentiment") if
+    result.sentiment_result else None,
+                "confidence": result.sentiment_result.get("confidence") if
+    result.sentiment_result else None,
                 "processing_time_ms": result.processing_time_ms,
                 "timestamp": result.timestamp.isoformat(),
                 "entities_count": len(result.entities)
             })
-        
+
         return jsonify({
             "results": processed_results,
             "count": len(processed_results)
         })
-        
+
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -348,13 +359,13 @@ def get_explainability_data(ticker):
     try:
         # This would integrate with SHAP for real explainability
         # For now, return mock explainability data
-        
+
         # Get recent prediction
         prediction = stream_processor.trigger_fusion_prediction(ticker)
-        
+
         if not prediction:
             return jsonify({"error": "No prediction available"})
-        
+
         # Mock SHAP-like feature importance
         features = {
             "sentiment_trend": np.random.uniform(-0.3, 0.3),
@@ -366,12 +377,12 @@ def get_explainability_data(ticker):
             "market_hours": np.random.uniform(-0.05, 0.05),
             "sector_performance": np.random.uniform(-0.1, 0.1)
         }
-        
+
         # Create SHAP-like waterfall data
         base_value = 0.0
         feature_contributions = []
         cumulative = base_value
-        
+
         for feature, contribution in features.items():
             feature_contributions.append({
                 "feature": feature.replace("_", " ").title(),
@@ -379,16 +390,18 @@ def get_explainability_data(ticker):
                 "cumulative": cumulative + contribution
             })
             cumulative += contribution
-        
+
         return jsonify({
             "ticker": ticker,
             "prediction": prediction,
             "base_value": base_value,
             "final_value": cumulative,
             "feature_contributions": feature_contributions,
-            "explanation": f"The model predicts {['bearish', 'neutral', 'bullish'][prediction['prediction'] + 1]} sentiment for {ticker} based on the feature contributions shown above."
+            "explanation": f"The model predicts {['bearish', 'neutral',
+    'bullish'][prediction['prediction'] + 1]} sentiment for {ticker} based on
+    the feature contributions shown above."
         })
-        
+
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -396,7 +409,8 @@ def get_explainability_data(ticker):
 @socketio.on('connect')
 def handle_connect():
     """Handle client connection"""
-    emit('status', {'message': 'Connected to Market Sentiment Analysis Dashboard'})
+    emit('status', {'message': 'Connected to Market Sentiment Analysis
+    Dashboard'})
 
 @socketio.on('subscribe_ticker')
 def handle_subscribe_ticker(data):
@@ -406,7 +420,8 @@ def handle_subscribe_ticker(data):
         # Join ticker-specific room
         from flask_socketio import join_room
         join_room(f"ticker_{ticker}")
-        emit('subscribed', {'ticker': ticker, 'message': f'Subscribed to {ticker} updates'})
+        emit('subscribed', {'ticker': ticker, 'message': f'Subscribed to
+    {ticker} updates'})
 
 # Background task for real-time updates (would be implemented with proper task queue)
 def background_updates():
@@ -416,7 +431,7 @@ def background_updates():
             # Get latest processing stats
             stats = stream_processor.get_processing_stats()
             socketio.emit('processing_stats', stats)
-            
+
             # Get latest predictions for active tickers
             for ticker in dashboard_state["active_tickers"]:
                 prediction = stream_processor.trigger_fusion_prediction(ticker)
@@ -425,9 +440,9 @@ def background_updates():
                         'ticker': ticker,
                         'prediction': prediction
                     }, room=f"ticker_{ticker}")
-            
+
             socketio.sleep(5)  # Update every 5 seconds
-            
+
         except Exception as e:
             app.logger.error(f"Error in background updates: {str(e)}")
             socketio.sleep(10)
@@ -435,12 +450,12 @@ def background_updates():
 if __name__ == '__main__':
     # Setup logging
     logging.basicConfig(level=logging.INFO)
-    
+
     # Start background task
     socketio.start_background_task(background_updates)
-    
+
     # Run the app
-    socketio.run(app, 
-                host=config.dashboard.host, 
-                port=config.dashboard.port, 
+    socketio.run(app,
+                host=config.dashboard.host,
+                port=config.dashboard.port,
                 debug=config.dashboard.debug)

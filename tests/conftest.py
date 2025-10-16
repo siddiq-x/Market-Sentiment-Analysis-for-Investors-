@@ -7,7 +7,8 @@ import pytest
 
 # Add the project root to the Python path
 import sys
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__),
+    '..')))
 
 # Fixtures for testing
 @pytest.fixture
@@ -25,7 +26,8 @@ def sample_tweet_data():
     """Sample tweet data for testing."""
     return {
         "id": "1234567890",
-        "text": "$AAPL stock is soaring after the latest earnings report! #investing",
+        "text": "$AAPL stock is soaring after the latest earnings report!
+    #investing",
         "created_at": "2025-01-01T12:30:00Z",
         "author_id": "9876543210",
         "public_metrics": {
