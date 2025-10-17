@@ -70,8 +70,7 @@ class FinancialNER:
         # Currency patterns
         currency_patterns = [
             [{"TEXT": {"REGEX": r"^\$\d+\.?\d*[BMK]?$"}}],
-            [{"TEXT": {"REGEX": r"^\d+\.?\d*[BMK]?\s*(dollars?|USD|billion|mill
-    ion|thousand)$"}}]
+            [{"TEXT": {"REGEX": r"^\d+\.?\d*[BMK]?\s*(dollars?|USD|billion|million|thousand)$"}}]
         ]
         self.matcher.add("CURRENCY", currency_patterns)
 
@@ -128,20 +127,17 @@ class FinancialNER:
         return {
             'exchanges': [
                 'NYSE', 'NASDAQ', 'AMEX', 'LSE', 'TSE', 'HKSE', 'SSE', 'BSE',
-                'New York Stock Exchange', 'London Stock Exchange', 'Tokyo
-    Stock Exchange' ],
+                'New York Stock Exchange', 'London Stock Exchange', 'Tokyo Stock Exchange'],
             'sectors': [
                 'Technology', 'Healthcare', 'Financial', 'Energy', 'Consumer',
     'Industrial',
-                'Materials', 'Utilities', 'Real Estate', 'Communication
-    Services',
+                'Materials', 'Utilities', 'Real Estate', 'Communication Services',
                 'Biotechnology', 'Pharmaceuticals', 'Banking', 'Insurance',
     'Oil & Gas'
             ],
             'financial_institutions': [
                 'Federal Reserve', 'Fed', 'SEC', 'CFTC', 'FINRA', 'FDIC',
-                'Goldman Sachs', 'Morgan Stanley', 'JPMorgan', 'Bank of
-    America',
+                'Goldman Sachs', 'Morgan Stanley', 'JPMorgan', 'Bank of America',
                 'Wells Fargo', 'Citigroup', 'BlackRock', 'Vanguard', 'Fidelity'
             ],
             'market_indices': [
@@ -150,8 +146,7 @@ class FinancialNER:
             ]
         }
 
-    def extract_entities(self, text: str, include_context: bool = True) ->
-    List[FinancialEntity]:
+    def extract_entities(self, text: str, include_context: bool = True) -> List[FinancialEntity]:
         """Extract financial entities from text"""
         if not text:
             return []
@@ -162,8 +157,11 @@ class FinancialNER:
         # Extract standard spaCy entities
         for ent in doc.ents:
             if self._is_financial_entity(ent):
-                context = self._get_context(text, ent.start_char,
-    ent.end_char) if include_context else ""
+                context = (
+                    self._get_context(text, ent.start_char, ent.end_char)
+                    if include_context
+                    else ""
+                )
 
                 entity = FinancialEntity(
                     text=ent.text,
@@ -225,15 +223,13 @@ class FinancialNER:
         }
         return mapping.get(label, label)
 
-    def _get_context(self, text: str, start: int, end: int, window: int = 50)
-    -> str:
+    def _get_context(self, text: str, start: int, end: int, window: int = 50) -> str:
         """Get context around an entity"""
         context_start = max(0, start - window)
         context_end = min(len(text), end + window)
         return text[context_start:context_end].strip()
 
-    def _extract_additional_entities(self, text: str, include_context: bool)
-    -> List[FinancialEntity]:
+    def _extract_additional_entities(self, text: str, include_context: bool) -> List[FinancialEntity]:
         """Extract additional financial entities using custom logic"""
         entities = []
 
@@ -243,8 +239,11 @@ class FinancialNER:
             ticker = match.group(1)
             # Filter out common false positives
             if self._is_valid_ticker(ticker):
-                context = self._get_context(text, match.start(), match.end())
-    if include_context else ""
+                context = (
+                    self._get_context(text, match.start(), match.end())
+                    if include_context
+                    else ""
+                )
 
                 entity = FinancialEntity(
                     text=match.group(0),
@@ -261,8 +260,11 @@ class FinancialNER:
             for known_entity in entity_list:
                 pattern = r'\b' + re.escape(known_entity) + r'\b'
                 for match in re.finditer(pattern, text, re.IGNORECASE):
-                    context = self._get_context(text, match.start(),
-    match.end()) if include_context else ""
+                    context = (
+                        self._get_context(text, match.start(), match.end())
+                        if include_context
+                        else ""
+                    )
 
                     entity = FinancialEntity(
                         text=match.group(0),
@@ -292,8 +294,7 @@ class FinancialNER:
                 ticker.isalpha() and
                 ticker.isupper())
 
-    def _remove_overlapping_entities(self, entities: List[FinancialEntity]) ->
-    List[FinancialEntity]:
+    def _remove_overlapping_entities(self, entities: List[FinancialEntity]) -> List[FinancialEntity]:
         """Remove overlapping entities, keeping the one with higher confidence"""
         if not entities:
             return []
@@ -306,7 +307,8 @@ class FinancialNER:
             # Check for overlap with already filtered entities
             overlap = False
             for filtered_entity in filtered:
-                if (entity.start < filtered_entity.end and
+                if (
+                    entity.start < filtered_entity.end and
                     entity.end > filtered_entity.start):
                     overlap = True
                     break
@@ -358,8 +360,11 @@ class FinancialNER:
 
         for ticker, count in ticker_counts.items():
             # Get the most informative context
-            best_context = max(ticker_contexts[ticker], key=len) if
-    ticker_contexts[ticker] else ""
+            best_context = (
+                max(ticker_contexts[ticker], key=len)
+                if ticker_contexts[ticker]
+                else ""
+            )
             ticker_mentions.append((ticker, count, best_context))
 
         # Sort by frequency

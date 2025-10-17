@@ -34,10 +34,8 @@ class BotDetector:
             ],
             'content_patterns': [
                 r'(?:buy|sell|invest)\s+(?:now|today|immediately)',  # Urgency
-                r'guaranteed\s+(?:profit|return|gains)',  # Unrealistic
-    promises
-                r'(?:\d+%|\d+x)\s+(?:profit|return|gains?)\s+(?:guaranteed|cert
-    ain)',
+                r'guaranteed\s+(?:profit|return|gains)',  # Unrealistic promises
+                r'(?:\d+%|\d+x)\s+(?:profit|return|gains?)\s+(?:guaranteed|certain)',
                 r'click\s+(?:here|link|below)',  # Spam links
                 r'(?:dm|message)\s+me\s+for',  # Direct message requests
             ],
@@ -82,35 +80,30 @@ class BotDetector:
         bot_score = 0.0
 
         # Analyze content patterns
-        content_score, content_reasons =
-    self._analyze_content_patterns(content)
+        content_score, content_reasons = self._analyze_content_patterns(content)
         bot_score += content_score
         reasons.extend(content_reasons)
 
         # Analyze author information
         if author_info:
-            author_score, author_reasons =
-    self._analyze_author_patterns(author_info)
+            author_score, author_reasons = self._analyze_author_patterns(author_info)
             bot_score += author_score
             reasons.extend(author_reasons)
 
         # Analyze temporal patterns
         if metadata:
-            temporal_score, temporal_reasons =
-    self._analyze_temporal_patterns(metadata)
+            temporal_score, temporal_reasons = self._analyze_temporal_patterns(metadata)
             bot_score += temporal_score
             reasons.extend(temporal_reasons)
 
         # Analyze engagement patterns
         if metadata:
-            engagement_score, engagement_reasons =
-    self._analyze_engagement_patterns(metadata)
+            engagement_score, engagement_reasons = self._analyze_engagement_patterns(metadata)
             bot_score += engagement_score
             reasons.extend(engagement_reasons)
 
         # Normalize score (0-1 scale)
-        normalized_score = min(1.0, bot_score / 4.0)  # Assuming max 4
-    categories
+        normalized_score = min(1.0, bot_score / 4.0)  # Assuming max 4 categories
 
         is_bot_likely = normalized_score > 0.6
         confidence = abs(normalized_score - 0.5) * 2  # Distance from neutral
@@ -176,8 +169,7 @@ class BotDetector:
 
         return min(1.0, score), reasons
 
-    def _analyze_author_patterns(self, author_info: Dict[str, Any]) ->
-    Tuple[float, List[str]]:
+    def _analyze_author_patterns(self, author_info: Dict[str, Any]) -> Tuple[float, List[str]]:
         """Analyze author information for bot indicators"""
         score = 0.0
         reasons = []
@@ -210,8 +202,7 @@ class BotDetector:
 
         if following > 0:
             ratio = followers / following
-            if ratio < 0.1 and following > 1000:  # Following many, few
-    followers
+            if ratio < 0.1 and following > 1000:  # Following many, few followers
                 score += 0.3
                 reasons.append("Suspicious follower/following ratio")
 
@@ -226,8 +217,7 @@ class BotDetector:
 
         return min(1.0, score), reasons
 
-    def _analyze_temporal_patterns(self, metadata: Dict[str, Any]) ->
-    Tuple[float, List[str]]:
+    def _analyze_temporal_patterns(self, metadata: Dict[str, Any]) -> Tuple[float, List[str]]:
         """Analyze temporal posting patterns"""
         score = 0.0
         reasons = []
@@ -255,15 +245,13 @@ class BotDetector:
         post_hours = metadata.get('typical_post_hours', [])
         if post_hours:
             night_posts = sum(1 for hour in post_hours if 2 <= hour <= 5)
-            if night_posts / len(post_hours) > 0.7:  # More than 70% night
-    posts
+            if night_posts / len(post_hours) > 0.7:  # More than 70% night posts
                 score += 0.2
                 reasons.append("Unusual posting hours")
 
         return min(1.0, score), reasons
 
-    def _analyze_engagement_patterns(self, metadata: Dict[str, Any]) ->
-    Tuple[float, List[str]]:
+    def _analyze_engagement_patterns(self, metadata: Dict[str, Any]) -> Tuple[float, List[str]]:
         """Analyze engagement patterns for bot indicators"""
         score = 0.0
         reasons = []
@@ -281,8 +269,7 @@ class BotDetector:
                 score += 0.2
                 reasons.append("Unusual retweet/like ratio")
 
-            if replies == 0 and total_engagement > 100:  # High engagement but
-    no replies
+            if replies == 0 and total_engagement > 100:  # High engagement but no replies
                 score += 0.1
                 reasons.append("No replies despite high engagement")
 
@@ -297,11 +284,9 @@ class BotDetector:
                                         bot_score: float,
                                         content: str,
                                         author_info: Optional[Dict[str, Any]],
-                                        metadata: Optional[Dict[str, Any]]) ->
-    float:
+                                        metadata: Optional[Dict[str, Any]]) -> float:
         """Calculate credibility adjustment based on bot score and other factors"""
-        base_adjustment = 1.0 - bot_score  # Higher bot score = lower
-    credibility
+        base_adjustment = 1.0 - bot_score  # Higher bot score = lower credibility
 
         # Positive adjustments for credible indicators
         credibility_boost = 0.0
@@ -310,16 +295,18 @@ class BotDetector:
             content_lower = content.lower()
 
             # Check for professional language
-            professional_terms = sum(1 for term in
-    self.credible_indicators['professional_terms']
-                                   if term in content_lower)
+            professional_terms = sum(
+                1 for term in self.credible_indicators['professional_terms']
+                if term in content_lower
+            )
             if professional_terms >= 2:
                 credibility_boost += 0.1
 
             # Check for institutional language
-            institutional_terms = sum(1 for term in
-    self.credible_indicators['institutional_language']
-                                    if term in content_lower)
+            institutional_terms = sum(
+                1 for term in self.credible_indicators['institutional_language']
+                if term in content_lower
+            )
             if institutional_terms >= 1:
                 credibility_boost += 0.15
 
@@ -333,37 +320,31 @@ class BotDetector:
 
         if metadata:
             source_domain = metadata.get('source_domain', '').lower()
-            if any(domain in source_domain for domain in
-    self.credible_indicators['verified_domains']):
+            if any(domain in source_domain for domain in self.credible_indicators['verified_domains']):
                 credibility_boost += 0.3
 
         # Final credibility adjustment (0.0 to 1.0)
-        final_adjustment = min(1.0, max(0.1, base_adjustment +
-    credibility_boost))
+        final_adjustment = min(1.0, max(0.1, base_adjustment + credibility_boost))
 
         return final_adjustment
 
     def batch_detect(self,
                     contents: List[str],
                     author_infos: Optional[List[Dict[str, Any]]] = None,
-                    metadatas: Optional[List[Dict[str, Any]]] = None) ->
-    List[BotScore]:
+                    metadatas: Optional[List[Dict[str, Any]]] = None) -> List[BotScore]:
         """Detect bots in batch"""
         results = []
 
         for i, content in enumerate(contents):
-            author_info = author_infos[i] if author_infos and i <
-    len(author_infos) else None
-            metadata = metadatas[i] if metadatas and i < len(metadatas) else
-    None
+            author_info = author_infos[i] if author_infos and i < len(author_infos) else None
+            metadata = metadatas[i] if metadatas and i < len(metadatas) else None
 
             result = self.detect_bot(content, author_info, metadata)
             results.append(result)
 
         return results
 
-    def get_detection_stats(self, bot_scores: List[BotScore]) -> Dict[str,
-    Any]:
+    def get_detection_stats(self, bot_scores: List[BotScore]) -> Dict[str, Any]:
         """Get statistics about bot detection results"""
         if not bot_scores:
             return {}
@@ -371,10 +352,8 @@ class BotDetector:
         bot_count = sum(1 for score in bot_scores if score.is_bot_likely)
         total_count = len(bot_scores)
 
-        avg_confidence = sum(score.confidence for score in bot_scores) /
-    total_count
-        avg_credibility = sum(score.credibility_adjustment for score in
-    bot_scores) / total_count
+        avg_confidence = sum(score.confidence for score in bot_scores) / total_count
+        avg_credibility = sum(score.credibility_adjustment for score in bot_scores) / total_count
 
         # Most common reasons
         all_reasons = []
@@ -385,8 +364,7 @@ class BotDetector:
         for reason in all_reasons:
             reason_counts[reason] = reason_counts.get(reason, 0) + 1
 
-        top_reasons = sorted(reason_counts.items(), key=lambda x: x[1],
-    reverse=True)[:5]
+        top_reasons = sorted(reason_counts.items(), key=lambda x: x[1], reverse=True)[:5]
 
         return {
             "total_analyzed": total_count,
