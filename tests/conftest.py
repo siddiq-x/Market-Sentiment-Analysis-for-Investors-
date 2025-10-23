@@ -29,8 +29,7 @@ def sample_tweet_data():
     """Sample tweet data for testing."""
     return {
         "id": "1234567890",
-        "text": "$AAPL stock is soaring after the latest earnings report!
-    #investing",
+        "text": "$AAPL stock is soaring after the latest earnings report! #investing",
         "created_at": "2025-01-01T12:30:00Z",
         "author_id": "9876543210",
         "public_metrics": {

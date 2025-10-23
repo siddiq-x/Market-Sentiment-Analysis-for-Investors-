@@ -83,10 +83,24 @@ class Config:
         self.dashboard = DashboardConfig()
         self.processing = ProcessingConfig()
 
-        # Financial tickers to monitor
+        # Financial tickers to monitor (expanded list)
         self.monitored_tickers = [
+            # Tech Giants
             'AAPL', 'GOOGL', 'MSFT', 'AMZN', 'TSLA', 'META', 'NVDA', 'NFLX',
-            'SPY', 'QQQ', 'IWM', 'GLD', 'BTC-USD', 'ETH-USD'
+            # Financial & Banking
+            'JPM', 'BAC', 'WFC', 'GS', 'C', 'AXP',
+            # Healthcare & Pharma
+            'JNJ', 'PFE', 'UNH', 'ABBV', 'MRK',
+            # Consumer & Retail
+            'WMT', 'HD', 'PG', 'KO', 'PEP', 'NKE',
+            # Energy & Utilities
+            'XOM', 'CVX', 'COP', 'EOG',
+            # ETFs & Indices
+            'SPY', 'QQQ', 'IWM', 'GLD', 'VTI', 'VOO',
+            # Crypto
+            'BTC-USD', 'ETH-USD', 'ADA-USD', 'SOL-USD',
+            # International
+            'ASML', 'TSM', 'BABA', 'TM'
         ]
 
         # News sources configuration

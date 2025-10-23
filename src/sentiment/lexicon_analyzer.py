@@ -361,3 +361,7 @@ class FinancialLexiconAnalyzer:
             "negation_words": len(self.negation_words),
             "total_sentiment_words": len(self.positive_words) + len(self.negative_words) + len(self.neutral_words)
         }
+
+
+# Backward-compatible alias expected by tests
+LexiconAnalyzer = FinancialLexiconAnalyzer

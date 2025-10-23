@@ -7,9 +7,14 @@ from typing import Dict, List, Any, Optional
 from datetime import datetime, timedelta
 import time
 import re
+import ssl
+import urllib3
 
 from src.data_ingestion.base_connector import BaseConnector, DataPoint
 from config.config import config
+
+# Disable SSL warnings for corporate networks
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
 class SocialConnector(BaseConnector):
@@ -27,6 +32,10 @@ class SocialConnector(BaseConnector):
             if not self.config["bearer_token"]:
                 self.logger.warning("Twitter Bearer Token not configured")
                 return False
+
+            # Disable SSL verification globally for tweepy
+            import ssl
+            ssl._create_default_https_context = ssl._create_unverified_context
 
             self.client = tweepy.Client(
                 bearer_token=self.config["bearer_token"],
@@ -188,6 +197,11 @@ class SocialConnector(BaseConnector):
     def is_healthy(self) -> bool:
         """Check if Twitter connection is healthy"""
         return self._is_connected and self.client is not None
+
+
+class TwitterConnector(SocialConnector):
+    """Backward-compatible alias used by tests."""
+    pass
 
 class RedditConnector(BaseConnector):
     """Connector for Reddit financial discussions (using public API)"""

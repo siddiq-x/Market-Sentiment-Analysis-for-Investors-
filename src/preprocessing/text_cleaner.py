@@ -41,7 +41,11 @@ class TextCleaner:
 
     def __init__(self):
         self.logger = logging.getLogger("text_cleaner")
-        self.lemmatizer = WordNetLemmatizer()
+        try:
+            self.lemmatizer = WordNetLemmatizer()
+        except Exception as e:
+            self.logger.warning(f"WordNet lemmatizer failed to initialize: {e}")
+            self.lemmatizer = None
 
         # Financial stop words (in addition to standard ones)
         self.financial_stopwords = {
@@ -267,6 +271,10 @@ class TextCleaner:
             pos_tags = pos_tag(tokens)
             lemmatized = []
 
+            if self.lemmatizer is None:
+                # Fallback to original tokens if lemmatizer is not available
+                return tokens
+
             for token, pos in pos_tags:
                 # Convert POS tag to WordNet format
                 wordnet_pos = self._get_wordnet_pos(pos)
@@ -277,7 +285,9 @@ class TextCleaner:
 
             return lemmatized
         except:
-            # Fallback to simple lemmatization
+            # Fallback to simple lemmatization or original tokens
+            if self.lemmatizer is None:
+                return tokens
             return [self.lemmatizer.lemmatize(token) for token in tokens]
 
     def _get_wordnet_pos(self, treebank_tag: str) -> Optional[str]:

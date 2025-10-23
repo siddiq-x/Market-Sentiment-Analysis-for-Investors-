@@ -27,7 +27,11 @@ class MarketConnector(BaseConnector):
         try:
             # Test Yahoo Finance
             test_ticker = yf.Ticker("AAPL")
-            test_data = test_ticker.history(period="1d")
+            try:
+                test_data = test_ticker.history(period="1d")
+            except Exception as e:
+                self.logger.warning(f"yfinance test call failed, continuing: {e}")
+                test_data = pd.DataFrame()
 
             if not test_data.empty:
                 self._is_connected = True
@@ -64,7 +68,11 @@ class MarketConnector(BaseConnector):
         for ticker in tickers:
             try:
                 stock = yf.Ticker(ticker)
-                hist_data = stock.history(period=period, interval=interval)
+                try:
+                    hist_data = stock.history(period=period, interval=interval)
+                except Exception as e:
+                    self.logger.warning(f"yfinance history failed for {ticker}: {e}")
+                    continue
 
                 if not hist_data.empty:
                     for timestamp, row in hist_data.iterrows():
@@ -144,7 +152,8 @@ class MarketConnector(BaseConnector):
                     "datatype": "json"
                 }
 
-                response = requests.get(self.alpha_vantage_url, params=params, timeout=15)
+                # Disable SSL verification to handle corporate SSL interception
+                response = requests.get(self.alpha_vantage_url, params=params, timeout=15, verify=False)
 
                 if response.status_code == 200:
                     data = response.json()

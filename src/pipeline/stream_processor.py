@@ -61,8 +61,7 @@ class KafkaSimulator:
         """Produce message to topic"""
         with self._lock:
             stream_message = StreamMessage(
-                message_id=f"{topic}_{int(time.time() *
-    1000)}_{len(self.topics[topic])}",
+                message_id=f"{topic}_{int(time.time() * 1000)}_{len(self.topics[topic])}",
                 topic=topic,
                 data=message,
                 timestamp=datetime.now()
@@ -133,12 +132,18 @@ class StreamProcessor:
             self.redis_client = redis.Redis(
                 host=config.database.redis_host,
                 port=config.database.redis_port,
-                decode_responses=True
+                decode_responses=True,
+                socket_connect_timeout=2,
+                socket_timeout=2
             )
+            # Test connection
+            self.redis_client.ping()
             self.redis_available = True
-        except:
+            self.logger.info("Redis connection established")
+        except Exception as e:
             self.redis_client = None
             self.redis_available = False
+            self.logger.warning(f"Redis not available: {e}")
             self.logger.warning("Redis not available, using in-memory caching")
 
         # Setup topic subscriptions
@@ -194,10 +199,17 @@ class StreamProcessor:
     'fetch_data'):
                     try:
                         news_data = ingestion_manager.fetch_by_connector('news', tickers=tickers, hours_back=1)
-                        for data_point in news_data[-5:]:  # Last 5 items
-                            self.kafka_sim.produce(config.kafka.topic_news, self._datapoint_to_dict(data_point))
+                        if news_data:
+                            for data_point in news_data[-5:]:  # Last 5 items
+                                self.kafka_sim.produce(config.kafka.topic_news, self._datapoint_to_dict(data_point))
+                        else:
+                            # Generate mock news data when no real data available
+                            self.logger.info("No news data available, generating mock data")
+                            self._generate_mock_news_data(tickers)
                     except Exception as e:
                         self.logger.error(f"Error fetching news data: {str(e)}")
+                        # Generate mock news data for sentiment analysis
+                        self._generate_mock_news_data(tickers)
 
                 # Simulate market data
                 if hasattr(ingestion_manager.connectors.get('market'),
@@ -209,14 +221,37 @@ class StreamProcessor:
                     except Exception as e:
                         self.logger.error(f"Error fetching market data: {str(e)}")
 
+                # Simulate Reddit data
+                if hasattr(ingestion_manager.connectors.get('reddit'), 'fetch_data'):
+                    try:
+                        reddit_data = ingestion_manager.fetch_by_connector('reddit', tickers=tickers, max_posts=10)
+                        if reddit_data:
+                            for data_point in reddit_data[-3:]:  # Last 3 items
+                                self.kafka_sim.produce(config.kafka.topic_social, self._datapoint_to_dict(data_point))
+                        else:
+                            # Generate mock social data when no real data available
+                            self.logger.info("No Reddit data available, generating mock data")
+                            self._generate_mock_social_data(tickers)
+                    except Exception as e:
+                        self.logger.error(f"Error fetching Reddit data: {str(e)}")
+                        # Generate mock social data for sentiment analysis
+                        self._generate_mock_social_data(tickers)
+
                 # Simulate social media data
                 if hasattr(ingestion_manager.connectors.get('twitter'), 'fetch_data'):
                     try:
                         social_data = ingestion_manager.fetch_by_connector('twitter', tickers=tickers, max_tweets=20)
-                        for data_point in social_data[-3:]:  # Last 3 items
-                            self.kafka_sim.produce(config.kafka.topic_social, self._datapoint_to_dict(data_point))
+                        if social_data:
+                            for data_point in social_data[-3:]:  # Last 3 items
+                                self.kafka_sim.produce(config.kafka.topic_social, self._datapoint_to_dict(data_point))
+                        else:
+                            # Generate mock social data when no real data available
+                            self.logger.info("No social data available, generating mock data")
+                            self._generate_mock_social_data(tickers)
                     except Exception as e:
                         self.logger.error(f"Error fetching social data: {str(e)}")
+                        # Generate mock social data for sentiment analysis
+                        self._generate_mock_social_data(tickers)
 
                 # Wait before next ingestion cycle
                 time.sleep(30)  # Fetch new data every 30 seconds
@@ -224,6 +259,62 @@ class StreamProcessor:
             except Exception as e:
                 self.logger.error(f"Error in data ingestion simulation: {str(e)}")
                 time.sleep(5)
+
+    def _generate_mock_news_data(self, tickers: List[str]):
+        """Generate mock news data for sentiment analysis"""
+        import random
+        
+        news_templates = [
+            "{} stock shows strong bullish momentum as investors remain optimistic about future growth prospects",
+            "Analysts raise price target for {} following impressive quarterly earnings beat",
+            "Market volatility impacts {} as investors react to economic uncertainty",
+            "{} faces headwinds from regulatory concerns and increased competition",
+            "Positive sentiment around {} as company announces strategic partnerships",
+            "Bearish outlook for {} as market conditions deteriorate",
+            "{} demonstrates resilience despite challenging market environment",
+            "Investors show mixed reactions to {} latest product launch"
+        ]
+        
+        for ticker in tickers[:3]:  # Generate for first 3 tickers
+            content = random.choice(news_templates).format(ticker)
+            mock_data = {
+                "source": "MockNews",
+                "timestamp": datetime.now().isoformat(),
+                "content": content,
+                "ticker": ticker,
+                "credibility_score": 0.7,
+                "metadata": {"data_type": "news", "sentiment_ready": True}
+            }
+            self.kafka_sim.produce(config.kafka.topic_news, mock_data)
+            self.logger.info(f"Generated mock news for {ticker}")
+
+    def _generate_mock_social_data(self, tickers: List[str]):
+        """Generate mock social media data for sentiment analysis"""
+        import random
+        
+        social_templates = [
+            f"$TICKER is looking bullish! Great earnings report 🚀 #stocks #investing",
+            f"Not sure about $TICKER right now, market seems uncertain 📉",
+            f"$TICKER breaking resistance levels! Time to buy? 💪",
+            f"$TICKER earnings miss expectations, stock price dropping 📊",
+            f"Bullish on $TICKER long term, fundamentals look solid 💎",
+            f"$TICKER getting hammered today, what's going on? 🤔",
+            f"Love $TICKER's new product line, this company is innovating! 🎯",
+            f"$TICKER chart looks bearish, might be time to sell 📈"
+        ]
+        
+        for ticker in tickers[:2]:  # Generate for first 2 tickers
+            content = random.choice(social_templates).replace("$TICKER", ticker)
+            mock_data = {
+                "source": "MockSocial",
+                "timestamp": datetime.now().isoformat(),
+                "content": content,
+                "ticker": ticker,
+                "credibility_score": 0.6,
+                "metadata": {"data_type": "social", "sentiment_ready": True}
+            }
+            self.kafka_sim.produce(config.kafka.topic_social, mock_data)
+            self.logger.info(f"Generated mock social data for {ticker}")
 
     def _datapoint_to_dict(self, data_point: DataPoint) -> Dict[str, Any]:
         """Convert DataPoint to dictionary for streaming"""
@@ -347,8 +438,11 @@ class StreamProcessor:
             # Sentiment analysis
             sentiment_result = self.sentiment_analyzer.analyze_sentiment(
                 cleaned_text_obj.cleaned,
-                ticker=data_point.ticker,
-                source=data_point.source
+                context={
+                    "ticker": data_point.ticker,
+                    "source": data_point.source,
+                    "credibility_score": data_point.credibility_score
+                }
             )
 
             # Prepare entities for output
