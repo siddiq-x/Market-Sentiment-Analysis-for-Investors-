@@ -1,10 +1,11 @@
 """
 Market data connector for stock prices and financial indicators
 """
+
 import yfinance as yf
 import requests
-from typing import Dict, List, Any, Optional
-from datetime import datetime, timedelta
+from typing import List, Optional
+from datetime import datetime
 import pandas as pd
 import time
 
@@ -16,7 +17,9 @@ class MarketConnector(BaseConnector):
     """Connector for market data using Yahoo Finance and Alpha Vantage"""
 
     def __init__(self):
-        super().__init__("MarketData", {"alpha_vantage_key": config.api.alpha_vantage_key})
+        super().__init__(
+            "MarketData", {"alpha_vantage_key": config.api.alpha_vantage_key}
+        )
         self.alpha_vantage_url = "https://www.alphavantage.co/query"
         # Alpha Vantage free tier: 5 calls per minute
         self.rate_limit_delay = 12
@@ -53,10 +56,12 @@ class MarketConnector(BaseConnector):
             time.sleep(self.rate_limit_delay - time_since_last)
         self.last_request_time = time.time()
 
-    def fetch_stock_data(self,
-                        tickers: Optional[List[str]] = None,
-                        period: str = "1d",
-                        interval: str = "1h") -> List[DataPoint]:
+    def fetch_stock_data(
+        self,
+        tickers: Optional[List[str]] = None,
+        period: str = "1d",
+        interval: str = "1h",
+    ) -> List[DataPoint]:
         """Fetch stock price data using Yahoo Finance"""
         if not self._is_connected:
             if not self.connect():
@@ -86,12 +91,12 @@ class MarketConnector(BaseConnector):
                         # Calculate price change
                         if len(hist_data) > 1:
                             prev_close = (
-                                hist_data['Close'].iloc[-2]
+                                hist_data["Close"].iloc[-2]
                                 if timestamp == hist_data.index[-1]
                                 else None
                             )
                             price_change = (
-                                (row['Close'] - prev_close) / prev_close * 100
+                                (row["Close"] - prev_close) / prev_close * 100
                                 if prev_close
                                 else 0
                             )
@@ -105,15 +110,15 @@ class MarketConnector(BaseConnector):
                             ticker=ticker,
                             credibility_score=0.95,  # High credibility for market data
                             metadata={
-                                "open": float(row['Open']),
-                                "high": float(row['High']),
-                                "low": float(row['Low']),
-                                "close": float(row['Close']),
-                                "volume": int(row['Volume']),
+                                "open": float(row["Open"]),
+                                "high": float(row["High"]),
+                                "low": float(row["Low"]),
+                                "close": float(row["Close"]),
+                                "volume": int(row["Volume"]),
                                 "price_change_pct": price_change,
                                 "data_type": "stock_price",
-                                "interval": interval
-                            }
+                                "interval": interval,
+                            },
                         )
                         data_points.append(data_point)
 
@@ -136,7 +141,7 @@ class MarketConnector(BaseConnector):
             ("FEDERAL_FUNDS_RATE", "Federal Funds Rate"),
             ("CPI", "Consumer Price Index"),
             ("UNEMPLOYMENT", "Unemployment Rate"),
-            ("GDP", "Gross Domestic Product")
+            ("GDP", "Gross Domestic Product"),
         ]
 
         data_points = []
@@ -149,11 +154,13 @@ class MarketConnector(BaseConnector):
                     "function": "ECONOMIC_INDICATOR",
                     "indicator": indicator_code,
                     "apikey": self.config["alpha_vantage_key"],
-                    "datatype": "json"
+                    "datatype": "json",
                 }
 
                 # Disable SSL verification to handle corporate SSL interception
-                response = requests.get(self.alpha_vantage_url, params=params, timeout=15, verify=False)
+                response = requests.get(
+                    self.alpha_vantage_url, params=params, timeout=15, verify=False
+                )
 
                 if response.status_code == 200:
                     data = response.json()
@@ -171,8 +178,8 @@ class MarketConnector(BaseConnector):
                                     "indicator": indicator_name,
                                     "indicator_code": indicator_code,
                                     "value": point.get("value"),
-                                    "data_type": "economic_indicator"
-                                }
+                                    "data_type": "economic_indicator",
+                                },
                             )
                             data_points.append(data_point)
 
@@ -192,10 +199,12 @@ class MarketConnector(BaseConnector):
                 return []
 
             # Create content with key fundamental metrics
-            content = (f"{ticker} Fundamentals: "
-                      f"Market Cap=${info.get('marketCap', 0):,}, "
-                      f"P/E Ratio={info.get('trailingPE', 'N/A')}, "
-                      f"Revenue=${info.get('totalRevenue', 0):,}")
+            content = (
+                f"{ticker} Fundamentals: "
+                f"Market Cap=${info.get('marketCap', 0):,}, "
+                f"P/E Ratio={info.get('trailingPE', 'N/A')}, "
+                f"Revenue=${info.get('totalRevenue', 0):,}"
+            )
 
             data_point = DataPoint(
                 source="YahooFinance",
@@ -212,8 +221,8 @@ class MarketConnector(BaseConnector):
                     "roe": info.get("returnOnEquity"),
                     "data_type": "fundamentals",
                     "sector": info.get("sector"),
-                    "industry": info.get("industry")
-                }
+                    "industry": info.get("industry"),
+                },
             )
 
             return [data_point]

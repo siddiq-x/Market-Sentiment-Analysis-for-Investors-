@@ -1,12 +1,12 @@
 """
 Real-time stream processing pipeline for sentiment and market data
 """
-import asyncio
+
 import json
 import logging
 from typing import Dict, List, Any, Optional, Callable
 from datetime import datetime, timedelta
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass
 from concurrent.futures import ThreadPoolExecutor
 import threading
 import time
@@ -27,6 +27,7 @@ from config.config import config
 @dataclass
 class StreamMessage:
     """Container for stream messages"""
+
     message_id: str
     topic: str
     data: Dict[str, Any]
@@ -37,6 +38,7 @@ class StreamMessage:
 @dataclass
 class ProcessingResult:
     """Container for processing results"""
+
     message_id: str
     original_data: DataPoint
     cleaned_text: Optional[str]
@@ -64,7 +66,7 @@ class KafkaSimulator:
                 message_id=f"{topic}_{int(time.time() * 1000)}_{len(self.topics[topic])}",
                 topic=topic,
                 data=message,
-                timestamp=datetime.now()
+                timestamp=datetime.now(),
             )
             self.topics[topic].append(stream_message)
 
@@ -90,13 +92,16 @@ class KafkaSimulator:
                     messages.append(self.topics[topic].popleft())
             return messages
 
+
 class StreamProcessor:
     """Main stream processing engine"""
 
-    def __init__(self,
-                 batch_size: int = 10,
-                 processing_interval: float = 1.0,
-                 max_workers: int = 4):
+    def __init__(
+        self,
+        batch_size: int = 10,
+        processing_interval: float = 1.0,
+        max_workers: int = 4,
+    ):
         self.logger = logging.getLogger("stream_processor")
 
         self.batch_size = batch_size
@@ -121,7 +126,7 @@ class StreamProcessor:
             "messages_processed": 0,
             "processing_errors": 0,
             "avg_processing_time": 0.0,
-            "start_time": None
+            "start_time": None,
         }
 
         # Thread pool for parallel processing
@@ -134,7 +139,7 @@ class StreamProcessor:
                 port=config.database.redis_port,
                 decode_responses=True,
                 socket_connect_timeout=2,
-                socket_timeout=2
+                socket_timeout=2,
             )
             # Test connection
             self.redis_client.ping()
@@ -153,12 +158,9 @@ class StreamProcessor:
 
     def _setup_subscriptions(self):
         """Setup Kafka topic subscriptions"""
-        self.kafka_sim.subscribe(config.kafka.topic_news,
-    self._handle_news_message)
-        self.kafka_sim.subscribe(config.kafka.topic_social,
-    self._handle_social_message)
-        self.kafka_sim.subscribe(config.kafka.topic_market,
-    self._handle_market_message)
+        self.kafka_sim.subscribe(config.kafka.topic_news, self._handle_news_message)
+        self.kafka_sim.subscribe(config.kafka.topic_social, self._handle_social_message)
+        self.kafka_sim.subscribe(config.kafka.topic_market, self._handle_market_message)
 
     def start(self):
         """Start the stream processor"""
@@ -195,16 +197,22 @@ class StreamProcessor:
                 tickers = config.monitored_tickers[:5]  # Limit for simulation
 
                 # Simulate news data
-                if hasattr(ingestion_manager.connectors.get('news'),
-    'fetch_data'):
+                if hasattr(ingestion_manager.connectors.get("news"), "fetch_data"):
                     try:
-                        news_data = ingestion_manager.fetch_by_connector('news', tickers=tickers, hours_back=1)
+                        news_data = ingestion_manager.fetch_by_connector(
+                            "news", tickers=tickers, hours_back=1
+                        )
                         if news_data:
                             for data_point in news_data[-5:]:  # Last 5 items
-                                self.kafka_sim.produce(config.kafka.topic_news, self._datapoint_to_dict(data_point))
+                                self.kafka_sim.produce(
+                                    config.kafka.topic_news,
+                                    self._datapoint_to_dict(data_point),
+                                )
                         else:
                             # Generate mock news data when no real data available
-                            self.logger.info("No news data available, generating mock data")
+                            self.logger.info(
+                                "No news data available, generating mock data"
+                            )
                             self._generate_mock_news_data(tickers)
                     except Exception as e:
                         self.logger.error(f"Error fetching news data: {str(e)}")
@@ -212,25 +220,36 @@ class StreamProcessor:
                         self._generate_mock_news_data(tickers)
 
                 # Simulate market data
-                if hasattr(ingestion_manager.connectors.get('market'),
-    'fetch_data'):
+                if hasattr(ingestion_manager.connectors.get("market"), "fetch_data"):
                     try:
-                        market_data = ingestion_manager.fetch_by_connector('market', tickers=tickers)
+                        market_data = ingestion_manager.fetch_by_connector(
+                            "market", tickers=tickers
+                        )
                         for data_point in market_data[-10:]:  # Last 10 items
-                            self.kafka_sim.produce(config.kafka.topic_market, self._datapoint_to_dict(data_point))
+                            self.kafka_sim.produce(
+                                config.kafka.topic_market,
+                                self._datapoint_to_dict(data_point),
+                            )
                     except Exception as e:
                         self.logger.error(f"Error fetching market data: {str(e)}")
 
                 # Simulate Reddit data
-                if hasattr(ingestion_manager.connectors.get('reddit'), 'fetch_data'):
+                if hasattr(ingestion_manager.connectors.get("reddit"), "fetch_data"):
                     try:
-                        reddit_data = ingestion_manager.fetch_by_connector('reddit', tickers=tickers, max_posts=10)
+                        reddit_data = ingestion_manager.fetch_by_connector(
+                            "reddit", tickers=tickers, max_posts=10
+                        )
                         if reddit_data:
                             for data_point in reddit_data[-3:]:  # Last 3 items
-                                self.kafka_sim.produce(config.kafka.topic_social, self._datapoint_to_dict(data_point))
+                                self.kafka_sim.produce(
+                                    config.kafka.topic_social,
+                                    self._datapoint_to_dict(data_point),
+                                )
                         else:
                             # Generate mock social data when no real data available
-                            self.logger.info("No Reddit data available, generating mock data")
+                            self.logger.info(
+                                "No Reddit data available, generating mock data"
+                            )
                             self._generate_mock_social_data(tickers)
                     except Exception as e:
                         self.logger.error(f"Error fetching Reddit data: {str(e)}")
@@ -238,15 +257,22 @@ class StreamProcessor:
                         self._generate_mock_social_data(tickers)
 
                 # Simulate social media data
-                if hasattr(ingestion_manager.connectors.get('twitter'), 'fetch_data'):
+                if hasattr(ingestion_manager.connectors.get("twitter"), "fetch_data"):
                     try:
-                        social_data = ingestion_manager.fetch_by_connector('twitter', tickers=tickers, max_tweets=20)
+                        social_data = ingestion_manager.fetch_by_connector(
+                            "twitter", tickers=tickers, max_tweets=20
+                        )
                         if social_data:
                             for data_point in social_data[-3:]:  # Last 3 items
-                                self.kafka_sim.produce(config.kafka.topic_social, self._datapoint_to_dict(data_point))
+                                self.kafka_sim.produce(
+                                    config.kafka.topic_social,
+                                    self._datapoint_to_dict(data_point),
+                                )
                         else:
                             # Generate mock social data when no real data available
-                            self.logger.info("No social data available, generating mock data")
+                            self.logger.info(
+                                "No social data available, generating mock data"
+                            )
                             self._generate_mock_social_data(tickers)
                     except Exception as e:
                         self.logger.error(f"Error fetching social data: {str(e)}")
@@ -263,7 +289,7 @@ class StreamProcessor:
     def _generate_mock_news_data(self, tickers: List[str]):
         """Generate mock news data for sentiment analysis"""
         import random
-        
+
         news_templates = [
             "{} stock shows strong bullish momentum as investors remain optimistic about future growth prospects",
             "Analysts raise price target for {} following impressive quarterly earnings beat",
@@ -272,9 +298,9 @@ class StreamProcessor:
             "Positive sentiment around {} as company announces strategic partnerships",
             "Bearish outlook for {} as market conditions deteriorate",
             "{} demonstrates resilience despite challenging market environment",
-            "Investors show mixed reactions to {} latest product launch"
+            "Investors show mixed reactions to {} latest product launch",
         ]
-        
+
         for ticker in tickers[:3]:  # Generate for first 3 tickers
             content = random.choice(news_templates).format(ticker)
             mock_data = {
@@ -283,7 +309,7 @@ class StreamProcessor:
                 "content": content,
                 "ticker": ticker,
                 "credibility_score": 0.7,
-                "metadata": {"data_type": "news", "sentiment_ready": True}
+                "metadata": {"data_type": "news", "sentiment_ready": True},
             }
             self.kafka_sim.produce(config.kafka.topic_news, mock_data)
             self.logger.info(f"Generated mock news for {ticker}")
@@ -291,18 +317,18 @@ class StreamProcessor:
     def _generate_mock_social_data(self, tickers: List[str]):
         """Generate mock social media data for sentiment analysis"""
         import random
-        
+
         social_templates = [
-            f"$TICKER is looking bullish! Great earnings report 🚀 #stocks #investing",
-            f"Not sure about $TICKER right now, market seems uncertain 📉",
-            f"$TICKER breaking resistance levels! Time to buy? 💪",
-            f"$TICKER earnings miss expectations, stock price dropping 📊",
-            f"Bullish on $TICKER long term, fundamentals look solid 💎",
-            f"$TICKER getting hammered today, what's going on? 🤔",
-            f"Love $TICKER's new product line, this company is innovating! 🎯",
-            f"$TICKER chart looks bearish, might be time to sell 📈"
+            "$TICKER is looking bullish! Great earnings report 🚀 #stocks #investing",
+            "Not sure about $TICKER right now, market seems uncertain 📉",
+            "$TICKER breaking resistance levels! Time to buy? 💪",
+            "$TICKER earnings miss expectations, stock price dropping 📊",
+            "Bullish on $TICKER long term, fundamentals look solid 💎",
+            "$TICKER getting hammered today, what's going on? 🤔",
+            "Love $TICKER's new product line, this company is innovating! 🎯",
+            "$TICKER chart looks bearish, might be time to sell 📈",
         ]
-        
+
         for ticker in tickers[:2]:  # Generate for first 2 tickers
             content = random.choice(social_templates).replace("$TICKER", ticker)
             mock_data = {
@@ -311,7 +337,7 @@ class StreamProcessor:
                 "content": content,
                 "ticker": ticker,
                 "credibility_score": 0.6,
-                "metadata": {"data_type": "social", "sentiment_ready": True}
+                "metadata": {"data_type": "social", "sentiment_ready": True},
             }
             self.kafka_sim.produce(config.kafka.topic_social, mock_data)
             self.logger.info(f"Generated mock social data for {ticker}")
@@ -324,20 +350,20 @@ class StreamProcessor:
             "content": data_point.content,
             "ticker": data_point.ticker,
             "credibility_score": data_point.credibility_score,
-            "metadata": data_point.metadata
+            "metadata": data_point.metadata,
         }
 
     def _handle_news_message(self, message: StreamMessage):
         """Handle news stream messages"""
-        self.raw_queue.put(('news', message))
+        self.raw_queue.put(("news", message))
 
     def _handle_social_message(self, message: StreamMessage):
         """Handle social media stream messages"""
-        self.raw_queue.put(('social', message))
+        self.raw_queue.put(("social", message))
 
     def _handle_market_message(self, message: StreamMessage):
         """Handle market data stream messages"""
-        self.raw_queue.put(('market', message))
+        self.raw_queue.put(("market", message))
 
     def _processing_loop(self):
         """Main processing loop"""
@@ -348,8 +374,10 @@ class StreamProcessor:
                 start_time = time.time()
 
                 # Collect messages for batch processing
-                while len(batch) < self.batch_size and (time.time() -
-    start_time) < self.processing_interval:
+                while (
+                    len(batch) < self.batch_size
+                    and (time.time() - start_time) < self.processing_interval
+                ):
                     try:
                         message_type, message = self.raw_queue.get(timeout=0.1)
                         batch.append((message_type, message))
@@ -360,8 +388,9 @@ class StreamProcessor:
                     # Process batch
                     futures = []
                     for message_type, message in batch:
-                        future = self.executor.submit(self._process_message,
-    message_type, message)
+                        future = self.executor.submit(
+                            self._process_message, message_type, message
+                        )
                         futures.append(future)
 
                     # Collect results
@@ -382,7 +411,9 @@ class StreamProcessor:
                 self.logger.error(f"Error in processing loop: {str(e)}")
                 time.sleep(1)
 
-    def _process_message(self, message_type: str, message: StreamMessage) -> Optional[ProcessingResult]:
+    def _process_message(
+        self, message_type: str, message: StreamMessage
+    ) -> Optional[ProcessingResult]:
         """Process individual message"""
         start_time = time.time()
 
@@ -391,7 +422,7 @@ class StreamProcessor:
             data_point = self._dict_to_datapoint(message.data)
 
             # Skip processing for market data (no text to analyze)
-            if message_type == 'market':
+            if message_type == "market":
                 return ProcessingResult(
                     message_id=message.message_id,
                     original_data=data_point,
@@ -400,32 +431,29 @@ class StreamProcessor:
                     sentiment_result=None,
                     fusion_prediction=None,
                     processing_time_ms=(time.time() - start_time) * 1000,
-                    timestamp=datetime.now()
+                    timestamp=datetime.now(),
                 )
 
             # Text preprocessing
             cleaned_text_obj = self.text_cleaner.clean_text(
-                data_point.content,
-                preserve_tickers=True,
-                preserve_numbers=True
+                data_point.content, preserve_tickers=True, preserve_numbers=True
             )
 
             # Named entity recognition
             entities = self.ner_extractor.extract_entities(data_point.content)
 
             # Bot detection (for social media)
-            if message_type == 'social':
+            if message_type == "social":
                 bot_detection = self.bot_detector.detect_bot(
                     data_point.content,
-                    author_info=data_point.metadata.get('author_info'),
-                    metadata=data_point.metadata
+                    author_info=data_point.metadata.get("author_info"),
+                    metadata=data_point.metadata,
                 )
-                data_point.metadata['bot_detection'] = {
-                    'is_bot_likely': bot_detection.is_bot_likely,
-                    'confidence': bot_detection.confidence,
-                    'reasons': bot_detection.reasons,
-                    'credibility_adjustment':
-    bot_detection.credibility_adjustment
+                data_point.metadata["bot_detection"] = {
+                    "is_bot_likely": bot_detection.is_bot_likely,
+                    "confidence": bot_detection.confidence,
+                    "reasons": bot_detection.reasons,
+                    "credibility_adjustment": bot_detection.credibility_adjustment,
                 }
 
                 # Skip further processing for likely bot content
@@ -441,16 +469,15 @@ class StreamProcessor:
                 context={
                     "ticker": data_point.ticker,
                     "source": data_point.source,
-                    "credibility_score": data_point.credibility_score
-                }
+                    "credibility_score": data_point.credibility_score,
+                },
             )
 
             # Prepare entities for output
-            entity_list = [{
-                'text': e.text,
-                'label': e.label,
-                'confidence': e.confidence
-            } for e in entities]
+            entity_list = [
+                {"text": e.text, "label": e.label, "confidence": e.confidence}
+                for e in entities
+            ]
 
             # Create processing result
             processing_time_ms = (time.time() - start_time) * 1000
@@ -461,17 +488,15 @@ class StreamProcessor:
                 cleaned_text=cleaned_text_obj.cleaned,
                 entities=entity_list,
                 sentiment_result={
-                    'sentiment': sentiment_result.sentiment,
-                    'confidence': sentiment_result.confidence,
-                    'ensemble_score': sentiment_result.ensemble_score,
-                    'finbert_available': sentiment_result.finbert_result is
-    not None,
-                    'lexicon_available': sentiment_result.lexicon_result is
-    not None
+                    "sentiment": sentiment_result.sentiment,
+                    "confidence": sentiment_result.confidence,
+                    "ensemble_score": sentiment_result.ensemble_score,
+                    "finbert_available": sentiment_result.finbert_result is not None,
+                    "lexicon_available": sentiment_result.lexicon_result is not None,
                 },
                 fusion_prediction=None,  # Will be added in batch processing
                 processing_time_ms=processing_time_ms,
-                timestamp=datetime.now()
+                timestamp=datetime.now(),
             )
 
         except Exception as e:
@@ -488,7 +513,7 @@ class StreamProcessor:
             content=data["content"],
             ticker=data.get("ticker"),
             credibility_score=data.get("credibility_score", 1.0),
-            metadata=data.get("metadata", {})
+            metadata=data.get("metadata", {}),
         )
 
     def get_processed_results(self, max_results: int = 100) -> List[ProcessingResult]:
@@ -515,7 +540,7 @@ class StreamProcessor:
 
         stats["queue_sizes"] = {
             "raw_queue": self.raw_queue.qsize(),
-            "processed_queue": self.processed_queue.qsize()
+            "processed_queue": self.processed_queue.qsize(),
         }
 
         stats["redis_available"] = self.redis_available
@@ -558,8 +583,7 @@ class StreamProcessor:
         """Trigger fusion prediction for a ticker"""
         try:
             # Get recent sentiment data
-            sentiment_data = self.get_recent_sentiment_data(ticker,
-    hours_back=24)
+            sentiment_data = self.get_recent_sentiment_data(ticker, hours_back=24)
 
             if len(sentiment_data) < 5:  # Need minimum data points
                 return None
@@ -571,7 +595,7 @@ class StreamProcessor:
                 "prediction": 0,  # neutral
                 "confidence": 0.75,
                 "timestamp": datetime.now().isoformat(),
-                "data_points_used": len(sentiment_data)
+                "data_points_used": len(sentiment_data),
             }
 
         except Exception as e:

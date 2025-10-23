@@ -1,6 +1,7 @@
 """
 LSTM-based multimodal fusion model for sentiment and market data
 """
+
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -11,7 +12,6 @@ import logging
 from dataclasses import dataclass
 from datetime import datetime
 import os
-import json
 
 from src.fusion.feature_engineer import FeatureSet
 
@@ -19,6 +19,7 @@ from src.fusion.feature_engineer import FeatureSet
 @dataclass
 class ModelConfig:
     """Configuration for LSTM model"""
+
     input_size: int
     hidden_size: int = 128
     num_layers: int = 2
@@ -31,6 +32,7 @@ class ModelConfig:
 @dataclass
 class TrainingConfig:
     """Configuration for model training"""
+
     batch_size: int = 32
     learning_rate: float = 0.001
     num_epochs: int = 100
@@ -42,6 +44,7 @@ class TrainingConfig:
 @dataclass
 class PredictionResult:
     """Container for model predictions"""
+
     predictions: np.ndarray
     probabilities: np.ndarray
     confidence: np.ndarray
@@ -97,12 +100,11 @@ class LSTMFusionModel(nn.Module):
             num_layers=config.num_layers,
             dropout=config.dropout if config.num_layers > 1 else 0,
             bidirectional=config.bidirectional,
-            batch_first=True
+            batch_first=True,
         )
 
         # Calculate LSTM output size
-        lstm_output_size = config.hidden_size * (2 if config.bidirectional
-    else 1)
+        lstm_output_size = config.hidden_size * (2 if config.bidirectional else 1)
 
         # Attention layer
         if config.attention:
@@ -118,7 +120,7 @@ class LSTMFusionModel(nn.Module):
             nn.Linear(final_size, config.hidden_size // 2),
             nn.ReLU(),
             nn.Dropout(config.dropout),
-            nn.Linear(config.hidden_size // 2, config.output_size)
+            nn.Linear(config.hidden_size // 2, config.output_size),
         )
 
         # Initialize weights
@@ -127,12 +129,12 @@ class LSTMFusionModel(nn.Module):
     def _init_weights(self):
         """Initialize model weights"""
         for name, param in self.named_parameters():
-            if 'weight' in name:
-                if 'lstm' in name:
+            if "weight" in name:
+                if "lstm" in name:
                     nn.init.xavier_uniform_(param)
                 else:
                     nn.init.kaiming_normal_(param)
-            elif 'bias' in name:
+            elif "bias" in name:
                 nn.init.constant_(param, 0)
 
     def forward(self, x):
@@ -158,17 +160,18 @@ class LSTMFusionModel(nn.Module):
 class MultimodalFusionEngine:
     """Main engine for multimodal fusion and prediction"""
 
-    def __init__(self,
-                 model_config: Optional[ModelConfig] = None,
-                 training_config: Optional[TrainingConfig] = None):
+    def __init__(
+        self,
+        model_config: Optional[ModelConfig] = None,
+        training_config: Optional[TrainingConfig] = None,
+    ):
         self.logger = logging.getLogger("fusion_engine")
 
         self.model_config = model_config
         self.training_config = training_config or TrainingConfig()
 
         self.model = None
-        self.device = torch.device("cuda" if torch.cuda.is_available() else
-    "cpu")
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.is_trained = False
 
         # Training history
@@ -176,7 +179,7 @@ class MultimodalFusionEngine:
             "train_loss": [],
             "val_loss": [],
             "train_acc": [],
-            "val_acc": []
+            "val_acc": [],
         }
 
         self.logger.info(f"Initialized fusion engine on device: {self.device}")
@@ -193,8 +196,9 @@ class MultimodalFusionEngine:
 
         # Count parameters
         total_params = sum(p.numel() for p in self.model.parameters())
-        trainable_params = sum(p.numel() for p in self.model.parameters() if
-    p.requires_grad)
+        trainable_params = sum(
+            p.numel() for p in self.model.parameters() if p.requires_grad
+        )
 
         self.logger.info(
             f"Model built - Total params: {total_params:,}, Trainable: {trainable_params:,}"
@@ -218,22 +222,23 @@ class MultimodalFusionEngine:
         optimizer = optim.Adam(
             self.model.parameters(),
             lr=self.training_config.learning_rate,
-            weight_decay=self.training_config.weight_decay
+            weight_decay=self.training_config.weight_decay,
         )
         scheduler = optim.lr_scheduler.ReduceLROnPlateau(
-            optimizer, mode='min', patience=5, factor=0.5
+            optimizer, mode="min", patience=5, factor=0.5
         )
 
         # Training loop
-        best_val_loss = float('inf')
+        best_val_loss = float("inf")
         patience_counter = 0
 
         self.logger.info("Starting training...")
 
         for epoch in range(self.training_config.num_epochs):
             # Training phase
-            train_loss, train_acc = self._train_epoch(train_loader, criterion,
-    optimizer)
+            train_loss, train_acc = self._train_epoch(
+                train_loader, criterion, optimizer
+            )
 
             # Validation phase
             val_loss, val_acc = self._validate_epoch(val_loader, criterion)
@@ -275,10 +280,12 @@ class MultimodalFusionEngine:
             "final_val_acc": val_acc,
             "best_val_loss": best_val_loss,
             "epochs_trained": epoch + 1,
-            "training_history": self.training_history
+            "training_history": self.training_history,
         }
 
-    def _prepare_data_loaders(self, feature_set: FeatureSet) -> Tuple[DataLoader, DataLoader]:
+    def _prepare_data_loaders(
+        self, feature_set: FeatureSet
+    ) -> Tuple[DataLoader, DataLoader]:
         """Prepare training and validation data loaders"""
         # Create dataset
         dataset = FinancialDataset(feature_set.features, feature_set.target)
@@ -297,19 +304,21 @@ class MultimodalFusionEngine:
             train_dataset,
             batch_size=self.training_config.batch_size,
             shuffle=True,
-            drop_last=True
+            drop_last=True,
         )
 
         val_loader = DataLoader(
             val_dataset,
             batch_size=self.training_config.batch_size,
             shuffle=False,
-            drop_last=False
+            drop_last=False,
         )
 
         return train_loader, val_loader
 
-    def _train_epoch(self, train_loader: DataLoader, criterion, optimizer) -> Tuple[float, float]:
+    def _train_epoch(
+        self, train_loader: DataLoader, criterion, optimizer
+    ) -> Tuple[float, float]:
         """Train for one epoch"""
         self.model.train()
         total_loss = 0.0
@@ -378,7 +387,7 @@ class MultimodalFusionEngine:
                 probabilities=np.array([]),
                 confidence=np.array([]),
                 timestamps=[],
-                metadata={"error": "Empty feature set"}
+                metadata={"error": "Empty feature set"},
             )
 
         self.model.eval()
@@ -386,10 +395,12 @@ class MultimodalFusionEngine:
         probabilities = []
 
         # Create data loader
-        dataset = FinancialDataset(feature_set.features,
-    np.zeros(len(feature_set.features)))
-        data_loader = DataLoader(dataset,
-    batch_size=self.training_config.batch_size, shuffle=False)
+        dataset = FinancialDataset(
+            feature_set.features, np.zeros(len(feature_set.features))
+        )
+        data_loader = DataLoader(
+            dataset, batch_size=self.training_config.batch_size, shuffle=False
+        )
 
         with torch.no_grad():
             for batch_features, _ in data_loader:
@@ -410,7 +421,7 @@ class MultimodalFusionEngine:
         metadata = {
             "model_config": self.model_config.__dict__,
             "prediction_count": len(predictions),
-            "average_confidence": np.mean(confidence)
+            "average_confidence": np.mean(confidence),
         }
 
         return PredictionResult(
@@ -418,23 +429,23 @@ class MultimodalFusionEngine:
             probabilities=probabilities,
             confidence=confidence,
             timestamps=feature_set.timestamps,
-            metadata=metadata
+            metadata=metadata,
         )
 
     def _save_checkpoint(self, epoch: int, val_loss: float):
         """Save model checkpoint"""
         checkpoint = {
-            'epoch': epoch,
-            'model_state_dict': self.model.state_dict(),
-            'val_loss': val_loss,
-            'model_config': self.model_config.__dict__,
-            'training_config': self.training_config.__dict__,
-            'training_history': self.training_history
+            "epoch": epoch,
+            "model_state_dict": self.model.state_dict(),
+            "val_loss": val_loss,
+            "model_config": self.model_config.__dict__,
+            "training_config": self.training_config.__dict__,
+            "training_history": self.training_history,
         }
 
         # Save to models directory
-        os.makedirs('models', exist_ok=True)
-        torch.save(checkpoint, 'models/best_fusion_model.pth')
+        os.makedirs("models", exist_ok=True)
+        torch.save(checkpoint, "models/best_fusion_model.pth")
 
     def load_checkpoint(self, checkpoint_path: str) -> bool:
         """Load model from checkpoint"""
@@ -442,15 +453,15 @@ class MultimodalFusionEngine:
             checkpoint = torch.load(checkpoint_path, map_location=self.device)
 
             # Restore configs
-            self.model_config = ModelConfig(**checkpoint['model_config'])
-            self.training_config = TrainingConfig(**checkpoint['training_config'])
+            self.model_config = ModelConfig(**checkpoint["model_config"])
+            self.training_config = TrainingConfig(**checkpoint["training_config"])
 
             # Build and load model
             self.build_model(self.model_config.input_size)
-            self.model.load_state_dict(checkpoint['model_state_dict'])
+            self.model.load_state_dict(checkpoint["model_state_dict"])
 
             # Restore training history
-            self.training_history = checkpoint['training_history']
+            self.training_history = checkpoint["training_history"]
             self.is_trained = True
 
             self.logger.info(f"Model loaded from {checkpoint_path}")
@@ -466,17 +477,17 @@ class MultimodalFusionEngine:
             return {"error": "Model not built"}
 
         total_params = sum(p.numel() for p in self.model.parameters())
-        trainable_params = sum(p.numel() for p in self.model.parameters() if
-    p.requires_grad)
+        trainable_params = sum(
+            p.numel() for p in self.model.parameters() if p.requires_grad
+        )
 
         summary = {
-            "model_config": self.model_config.__dict__ if self.model_config
-    else {},
+            "model_config": self.model_config.__dict__ if self.model_config else {},
             "training_config": self.training_config.__dict__,
             "total_parameters": total_params,
             "trainable_parameters": trainable_params,
             "is_trained": self.is_trained,
-            "device": str(self.device)
+            "device": str(self.device),
         }
 
         if self.training_history["train_loss"]:
@@ -487,7 +498,7 @@ class MultimodalFusionEngine:
                 "best_val_loss": min(self.training_history["val_loss"]),
                 "final_train_acc": self.training_history["train_acc"][-1],
                 "final_val_acc": self.training_history["val_acc"][-1],
-                "best_val_acc": max(self.training_history["val_acc"])
+                "best_val_acc": max(self.training_history["val_acc"]),
             }
 
         return summary

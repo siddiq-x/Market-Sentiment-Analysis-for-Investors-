@@ -1,6 +1,7 @@
 """
 Test suite for data ingestion components
 """
+
 import unittest
 from unittest.mock import Mock, patch
 from datetime import datetime
@@ -8,12 +9,15 @@ import sys
 import os
 
 # Add src to path
-sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", "src"))
 
 from data_ingestion.base_connector import DataPoint  # noqa: E402
 from data_ingestion.news_connector import NewsConnector  # noqa: E402
 from data_ingestion.market_connector import MarketConnector  # noqa: E402
-from data_ingestion.social_connector import TwitterConnector, RedditConnector  # noqa: E402
+from data_ingestion.social_connector import (
+    TwitterConnector,
+    RedditConnector,
+)  # noqa: E402
 from data_ingestion.ingestion_manager import IngestionManager  # noqa: E402
 
 
@@ -27,7 +31,7 @@ class TestDataPoint(unittest.TestCase):
             timestamp=datetime.now(),
             source="test_source",
             ticker="AAPL",
-            metadata={"author": "test_author"}
+            metadata={"author": "test_author"},
         )
 
         self.assertEqual(dp.content, "Test news content")
@@ -43,7 +47,7 @@ class TestDataPoint(unittest.TestCase):
             content="Breaking: Company reports strong earnings",
             timestamp=datetime.now(),
             source="reuters",
-            ticker="AAPL"
+            ticker="AAPL",
         )
 
         # Low credibility source
@@ -51,7 +55,7 @@ class TestDataPoint(unittest.TestCase):
             content="OMG AAPL TO THE MOON!!!",
             timestamp=datetime.now(),
             source="unknown_blog",
-            ticker="AAPL"
+            ticker="AAPL",
         )
 
         self.assertGreater(dp_high.credibility_score, dp_low.credibility_score)
@@ -60,66 +64,70 @@ class TestDataPoint(unittest.TestCase):
 class TestNewsConnector(unittest.TestCase):
     """Test NewsConnector"""
 
-    @patch('data_ingestion.news_connector.requests.get')
+    @patch("data_ingestion.news_connector.requests.get")
     def test_news_connector_fetch(self, mock_get):
         """Test news fetching"""
         # Mock API response
         mock_response = Mock()
         mock_response.status_code = 200
         mock_response.json.return_value = {
-            'articles': [
+            "articles": [
                 {
-                    'title': 'Apple Reports Strong Q4 Earnings',
-                    'description': 'Apple Inc. reported better than expected earnings',
-                    'content': 'Full article content here...',
-                    'publishedAt': '2023-10-15T10:00:00Z',
-                    'source': {'name': 'Reuters'},
-                    'url': 'https://example.com/article1'
+                    "title": "Apple Reports Strong Q4 Earnings",
+                    "description": "Apple Inc. reported better than expected earnings",
+                    "content": "Full article content here...",
+                    "publishedAt": "2023-10-15T10:00:00Z",
+                    "source": {"name": "Reuters"},
+                    "url": "https://example.com/article1",
                 }
             ]
         }
         mock_get.return_value = mock_response
 
         connector = NewsConnector()
-        data_points = connector.fetch_data(['AAPL'], hours_back=24)
+        data_points = connector.fetch_data(["AAPL"], hours_back=24)
 
         self.assertIsInstance(data_points, list)
         if data_points:  # If API call succeeded
             self.assertIsInstance(data_points[0], DataPoint)
-            self.assertEqual(data_points[0].ticker, 'AAPL')
+            self.assertEqual(data_points[0].ticker, "AAPL")
 
 
 class TestMarketConnector(unittest.TestCase):
     """Test MarketConnector"""
 
-    @patch('data_ingestion.market_connector.yf.download')
+    @patch("data_ingestion.market_connector.yf.download")
     def test_market_data_fetch(self, mock_download):
         """Test market data fetching"""
         # Mock yfinance response
         import pandas as pd
-        mock_data = pd.DataFrame({
-            'Open': [150.0, 151.0],
-            'High': [152.0, 153.0],
-            'Low': [149.0, 150.0],
-            'Close': [151.0, 152.0],
-            'Volume': [1000000, 1100000]
-        }, index=pd.date_range('2023-10-15', periods=2, freq='D'))
+
+        mock_data = pd.DataFrame(
+            {
+                "Open": [150.0, 151.0],
+                "High": [152.0, 153.0],
+                "Low": [149.0, 150.0],
+                "Close": [151.0, 152.0],
+                "Volume": [1000000, 1100000],
+            },
+            index=pd.date_range("2023-10-15", periods=2, freq="D"),
+        )
 
         mock_download.return_value = mock_data
 
         connector = MarketConnector()
-        data_points = connector.fetch_data(['AAPL'], hours_back=24)
+        data_points = connector.fetch_data(["AAPL"], hours_back=24)
 
         self.assertIsInstance(data_points, list)
         if data_points:
             self.assertIsInstance(data_points[0], DataPoint)
-            self.assertEqual(data_points[0].ticker, 'AAPL')
+            self.assertEqual(data_points[0].ticker, "AAPL")
 
 
 class TestSocialConnector(unittest.TestCase):
     """Test Social Media Connectors"""
 
-    @patch('data_ingestion.social_connector.tweepy.API')
+    @patch("data_ingestion.social_connector.tweepy.API")
     def test_twitter_connector(self, mock_api):
         """Test Twitter connector"""
         # Mock Twitter API response
@@ -136,28 +144,28 @@ class TestSocialConnector(unittest.TestCase):
         mock_api.return_value = mock_api_instance
 
         connector = TwitterConnector()
-        data_points = connector.fetch_data(['AAPL'], hours_back=24)
+        data_points = connector.fetch_data(["AAPL"], hours_back=24)
 
         self.assertIsInstance(data_points, list)
 
-    @patch('data_ingestion.social_connector.requests.get')
+    @patch("data_ingestion.social_connector.requests.get")
     def test_reddit_connector(self, mock_get):
         """Test Reddit connector"""
         # Mock Reddit API response
         mock_response = Mock()
         mock_response.status_code = 200
         mock_response.json.return_value = {
-            'data': {
-                'children': [
+            "data": {
+                "children": [
                     {
-                        'data': {
-                            'title': 'AAPL Discussion',
-                            'selftext': 'What do you think about Apple stock?',
-                            'created_utc': datetime.now().timestamp(),
-                            'author': 'test_user',
-                            'score': 50,
-                            'num_comments': 10,
-                            'subreddit': 'investing'
+                        "data": {
+                            "title": "AAPL Discussion",
+                            "selftext": "What do you think about Apple stock?",
+                            "created_utc": datetime.now().timestamp(),
+                            "author": "test_user",
+                            "score": 50,
+                            "num_comments": 10,
+                            "subreddit": "investing",
                         }
                     }
                 ]
@@ -166,7 +174,7 @@ class TestSocialConnector(unittest.TestCase):
         mock_get.return_value = mock_response
 
         connector = RedditConnector()
-        data_points = connector.fetch_data(['AAPL'], hours_back=24)
+        data_points = connector.fetch_data(["AAPL"], hours_back=24)
 
         self.assertIsInstance(data_points, list)
 
@@ -178,9 +186,9 @@ class TestIngestionManager(unittest.TestCase):
         """Set up test fixtures"""
         self.manager = IngestionManager()
 
-    @patch('data_ingestion.ingestion_manager.NewsConnector')
-    @patch('data_ingestion.ingestion_manager.MarketConnector')
-    @patch('data_ingestion.ingestion_manager.TwitterConnector')
+    @patch("data_ingestion.ingestion_manager.NewsConnector")
+    @patch("data_ingestion.ingestion_manager.MarketConnector")
+    @patch("data_ingestion.ingestion_manager.TwitterConnector")
     def test_fetch_all_data(self, mock_twitter, mock_market, mock_news):
         """Test fetching data from all sources"""
         # Mock connector instances
@@ -205,7 +213,7 @@ class TestIngestionManager(unittest.TestCase):
         mock_twitter.return_value = mock_twitter_instance
 
         # Test fetch
-        all_data = self.manager.fetch_all_data(['AAPL'], hours_back=24)
+        all_data = self.manager.fetch_all_data(["AAPL"], hours_back=24)
 
         self.assertIsInstance(all_data, list)
         # Should have data from all sources
@@ -217,14 +225,14 @@ class TestIngestionManager(unittest.TestCase):
             content="Valid content",
             timestamp=datetime.now(),
             source="valid_source",
-            ticker="AAPL"
+            ticker="AAPL",
         )
 
         invalid_dp = DataPoint(
             content="",  # Empty content
             timestamp=datetime.now(),
             source="source",
-            ticker="AAPL"
+            ticker="AAPL",
         )
 
         self.assertTrue(self.manager.validate_data_point(valid_dp))
@@ -246,15 +254,15 @@ class TestIngestionManager(unittest.TestCase):
         """Test data export functionality"""
         data_points = [
             DataPoint("Content 1", datetime.now(), "source1", "AAPL"),
-            DataPoint("Content 2", datetime.now(), "source2", "AAPL")
+            DataPoint("Content 2", datetime.now(), "source2", "AAPL"),
         ]
 
         # Test JSON export
-        json_result = self.manager.export_data(data_points, format='json')
+        json_result = self.manager.export_data(data_points, format="json")
         self.assertIsInstance(json_result, str)
 
         # Test CSV export
-        csv_result = self.manager.export_data(data_points, format='csv')
+        csv_result = self.manager.export_data(data_points, format="csv")
         self.assertIsInstance(csv_result, str)
 
 
@@ -269,7 +277,7 @@ class TestErrorHandling(unittest.TestCase):
         # This is more of a smoke test
         self.assertIsNotNone(connector)
 
-    @patch('data_ingestion.news_connector.requests.get')
+    @patch("data_ingestion.news_connector.requests.get")
     def test_api_error_handling(self, mock_get):
         """Test API error handling"""
         # Mock API error
@@ -282,7 +290,7 @@ class TestErrorHandling(unittest.TestCase):
 
         # Should handle errors gracefully
         try:
-            data_points = connector.fetch_data(['AAPL'], hours_back=24)
+            data_points = connector.fetch_data(["AAPL"], hours_back=24)
             # Should return empty list on error
             self.assertIsInstance(data_points, list)
         except Exception:
@@ -293,11 +301,11 @@ class TestErrorHandling(unittest.TestCase):
         connector = MarketConnector()
 
         # Test with invalid ticker
-        data_points = connector.fetch_data(['INVALID_TICKER'], hours_back=24)
+        data_points = connector.fetch_data(["INVALID_TICKER"], hours_back=24)
 
         # Should handle gracefully (empty list or valid response)
         self.assertIsInstance(data_points, list)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

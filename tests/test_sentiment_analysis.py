@@ -2,8 +2,9 @@
 import os
 import sys
 
-sys.path.insert(0, os.path.abspath(
-    os.path.join(os.path.dirname(__file__), '..', 'src')))
+sys.path.insert(
+    0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src"))
+)
 
 """
 Test suite for sentiment analysis components.
@@ -42,11 +43,11 @@ class TestSentimentAnalysis(unittest.TestCase):
             "Tesla faces significant challenges in the current market",
             "The market remains neutral on Microsoft's latest earnings",
             "NVIDIA shows strong growth potential",
-            "Economic uncertainty affects all major indices"
+            "Economic uncertainty affects all major indices",
         ]
 
-    @patch('sentiment.finbert_analyzer.AutoTokenizer')
-    @patch('sentiment.finbert_analyzer.AutoModelForSequenceClassification')
+    @patch("sentiment.finbert_analyzer.AutoTokenizer")
+    @patch("sentiment.finbert_analyzer.AutoModelForSequenceClassification")
     def test_finbert_analyzer_initialization(self, mock_model, mock_tokenizer):
         """
         Test FinBERT analyzer initialization and model loading.
@@ -57,14 +58,14 @@ class TestSentimentAnalysis(unittest.TestCase):
         # Mock the model and tokenizer
         mock_tokenizer_instance = Mock()
         mock_tokenizer_instance.return_value = {
-            'input_ids': [1, 2, 3],
-            'attention_mask': [1, 1, 1]
+            "input_ids": [1, 2, 3],
+            "attention_mask": [1, 1, 1],
         }
         mock_tokenizer.from_pretrained.return_value = mock_tokenizer_instance
 
         mock_model_instance = Mock()
         mock_model_instance.return_value = {
-            'logits': [[0.1, 0.2, 0.7]]  # Mock logits for 3 classes
+            "logits": [[0.1, 0.2, 0.7]]  # Mock logits for 3 classes
         }
         mock_model.from_pretrained.return_value = mock_model_instance
 
@@ -78,9 +79,9 @@ class TestSentimentAnalysis(unittest.TestCase):
 
         # Test model prediction
         result = analyzer.analyze("Test text")
-        self.assertIn('label', result)
-        self.assertIn('score', result)
-        self.assertIn(result['label'], ['positive', 'negative', 'neutral'])
+        self.assertIn("label", result)
+        self.assertIn("score", result)
+        self.assertIn(result["label"], ["positive", "negative", "neutral"])
 
     def test_lexicon_analyzer_initialization(self):
         """
@@ -98,8 +99,8 @@ class TestSentimentAnalysis(unittest.TestCase):
         self.assertGreater(len(analyzer.negative_words), 0)
 
         # Test that word lists are properly loaded
-        self.assertIn('bullish', analyzer.positive_words)
-        self.assertIn('bearish', analyzer.negative_words)
+        self.assertIn("bullish", analyzer.positive_words)
+        self.assertIn("bearish", analyzer.negative_words)
         self.assertGreater(len(analyzer.negative_words), 0)
 
     def test_lexicon_analyzer_sentiment_scoring(self):
@@ -129,15 +130,11 @@ class TestSentimentAnalysis(unittest.TestCase):
         result_negated = analyzer.analyze_sentiment(text_with_negation)
 
         # Negated sentiment should be different from positive
-        self.assertNotEqual(
-            result.ensemble_score,
-            result_negated.ensemble_score
-        )
+        self.assertNotEqual(result.ensemble_score, result_negated.ensemble_score)
 
-    @patch('sentiment.finbert_analyzer.FinBERTAnalyzer')
-    @patch('sentiment.lexicon_analyzer.LexiconAnalyzer')
-    def test_ensemble_analyzer_initialization(
-            self, mock_lexicon, mock_finbert):
+    @patch("sentiment.finbert_analyzer.FinBERTAnalyzer")
+    @patch("sentiment.lexicon_analyzer.LexiconAnalyzer")
+    def test_ensemble_analyzer_initialization(self, mock_lexicon, mock_finbert):
         """Test ensemble analyzer initialization"""
         # Mock the analyzers
         mock_finbert_instance = Mock()
@@ -151,10 +148,9 @@ class TestSentimentAnalysis(unittest.TestCase):
         self.assertEqual(analyzer.finbert_weight, 0.7)
         self.assertEqual(analyzer.lexicon_weight, 0.3)
 
-    @patch('sentiment.finbert_analyzer.FinBERTAnalyzer')
-    @patch('sentiment.lexicon_analyzer.LexiconAnalyzer')
-    def test_ensemble_analyzer_sentiment_combination(
-            self, mock_lexicon, mock_finbert):
+    @patch("sentiment.finbert_analyzer.FinBERTAnalyzer")
+    @patch("sentiment.lexicon_analyzer.LexiconAnalyzer")
+    def test_ensemble_analyzer_sentiment_combination(self, mock_lexicon, mock_finbert):
         """Test ensemble sentiment combination"""
         # Mock analyzer results
         mock_finbert_instance = Mock()
@@ -183,9 +179,9 @@ class TestSentimentAnalysis(unittest.TestCase):
 
         # Check that ensemble combines results
         self.assertIsNotNone(result)
-        self.assertTrue(hasattr(result, 'sentiment'))
-        self.assertTrue(hasattr(result, 'confidence'))
-        self.assertTrue(hasattr(result, 'ensemble_score'))
+        self.assertTrue(hasattr(result, "sentiment"))
+        self.assertTrue(hasattr(result, "confidence"))
+        self.assertTrue(hasattr(result, "ensemble_score"))
 
     def test_batch_processing(self):
         """Test batch processing capabilities"""
@@ -195,8 +191,8 @@ class TestSentimentAnalysis(unittest.TestCase):
 
         self.assertEqual(len(results), len(self.sample_texts))
         for result in results:
-            self.assertTrue(hasattr(result, 'sentiment'))
-            self.assertTrue(hasattr(result, 'confidence'))
+            self.assertTrue(hasattr(result, "sentiment"))
+            self.assertTrue(hasattr(result, "confidence"))
             self.assertIsInstance(result.sentiment, int)
             self.assertIsInstance(result.confidence, float)
 
@@ -235,13 +231,13 @@ class TestSentimentEdgeCases(unittest.TestCase):
 
         # Test empty string
         result = analyzer.analyze("")
-        self.assertEqual(result['label'], 'neutral')
-        self.assertEqual(result['score'], 0.0)
+        self.assertEqual(result["label"], "neutral")
+        self.assertEqual(result["score"], 0.0)
 
         # Test whitespace-only string
         result = analyzer.analyze("   \n\t")
-        self.assertEqual(result['label'], 'neutral')
-        self.assertEqual(result['score'], 0.0)
+        self.assertEqual(result["label"], "neutral")
+        self.assertEqual(result["score"], 0.0)
 
         # Test None input
         with self.assertRaises(ValueError):
@@ -275,5 +271,5 @@ class TestSentimentEdgeCases(unittest.TestCase):
         self.assertIsNotNone(result)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

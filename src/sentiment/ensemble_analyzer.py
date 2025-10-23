@@ -1,19 +1,23 @@
 """
 Ensemble sentiment analyzer combining FinBERT and lexicon-based approaches
 """
+
 from typing import Dict, List, Any, Optional, Tuple
 import logging
 from dataclasses import dataclass
 from datetime import datetime
-import numpy as np
 
 from src.sentiment.finbert_analyzer import FinBERTAnalyzer, SentimentResult
-from src.sentiment.lexicon_analyzer import FinancialLexiconAnalyzer, LexiconSentimentResult
+from src.sentiment.lexicon_analyzer import (
+    FinancialLexiconAnalyzer,
+    LexiconSentimentResult,
+)
 
 
 @dataclass
 class EnsembleSentimentResult:
     """Container for ensemble sentiment analysis results"""
+
     text: str
     sentiment: str
     confidence: float
@@ -28,11 +32,13 @@ class EnsembleSentimentResult:
 class EnsembleSentimentAnalyzer:
     """Ensemble analyzer combining multiple sentiment analysis approaches"""
 
-    def __init__(self,
-                 finbert_weight: float = 0.7,
-                 lexicon_weight: float = 0.3,
-                 enable_finbert: bool = True,
-                 enable_lexicon: bool = True):
+    def __init__(
+        self,
+        finbert_weight: float = 0.7,
+        lexicon_weight: float = 0.3,
+        enable_finbert: bool = True,
+        enable_lexicon: bool = True,
+    ):
         """
         Initialize ensemble analyzer
 
@@ -128,13 +134,10 @@ class EnsembleSentimentAnalyzer:
             "lexicon_enabled": self.enable_lexicon,
             "finbert_available": finbert_result is not None,
             "lexicon_available": lexicon_result is not None,
-            "context": context or {}
+            "context": context or {},
         }
 
-        weights = {
-            "finbert": self.finbert_weight,
-            "lexicon": self.lexicon_weight
-        }
+        weights = {"finbert": self.finbert_weight, "lexicon": self.lexicon_weight}
 
         return EnsembleSentimentResult(
             text=text,
@@ -145,7 +148,7 @@ class EnsembleSentimentAnalyzer:
             lexicon_result=lexicon_result,
             weights=weights,
             timestamp=datetime.now(),
-            metadata=metadata
+            metadata=metadata,
         )
 
     def _create_empty_result(self, text: str) -> EnsembleSentimentResult:
@@ -159,7 +162,7 @@ class EnsembleSentimentAnalyzer:
             lexicon_result=None,
             weights={"finbert": self.finbert_weight, "lexicon": self.lexicon_weight},
             timestamp=datetime.now(),
-            metadata={"error": "Empty or invalid text"}
+            metadata={"error": "Empty or invalid text"},
         )
 
     def _combine_results(
@@ -189,10 +192,12 @@ class EnsembleSentimentAnalyzer:
         if finbert_result and lexicon_result:
             # Both analyzers available
             ensemble_score = (
-                finbert_score * self.finbert_weight + lexicon_score * self.lexicon_weight
+                finbert_score * self.finbert_weight
+                + lexicon_score * self.lexicon_weight
             )
             ensemble_confidence = (
-                finbert_confidence * self.finbert_weight + lexicon_confidence * self.lexicon_weight
+                finbert_confidence * self.finbert_weight
+                + lexicon_confidence * self.lexicon_weight
             )
         elif finbert_result:
             # Only FinBERT available
@@ -250,8 +255,9 @@ class EnsembleSentimentAnalyzer:
         """Calculate agreement factor between two sentiment results"""
         if sentiment1 == sentiment2:
             return 1.0  # Perfect agreement
-        elif (sentiment1 == "neutral" and sentiment2 != "neutral") or \
-             (sentiment1 != "neutral" and sentiment2 == "neutral"):
+        elif (sentiment1 == "neutral" and sentiment2 != "neutral") or (
+            sentiment1 != "neutral" and sentiment2 == "neutral"
+        ):
             return 0.8  # Partial agreement (one neutral)
         else:
             return 0.6  # Disagreement (positive vs negative)
@@ -270,7 +276,9 @@ class EnsembleSentimentAnalyzer:
 
         return results
 
-    def get_ensemble_summary(self, results: List[EnsembleSentimentResult]) -> Dict[str, Any]:
+    def get_ensemble_summary(
+        self, results: List[EnsembleSentimentResult]
+    ) -> Dict[str, Any]:
         """Get summary statistics of ensemble analysis results"""
         if not results:
             return {}
@@ -300,7 +308,7 @@ class EnsembleSentimentAnalyzer:
         return {
             "total_analyzed": total_results,
             "sentiment_distribution": {
-                k: {"count": v, "percentage": (v/total_results)*100}
+                k: {"count": v, "percentage": (v / total_results) * 100}
                 for k, v in sentiment_counts.items()
             },
             "average_confidence": total_confidence / total_results,
@@ -314,12 +322,9 @@ class EnsembleSentimentAnalyzer:
                 "both_available": both_available,
                 "finbert_coverage": (finbert_available / total_results) * 100,
                 "lexicon_coverage": (lexicon_available / total_results) * 100,
-                "ensemble_coverage": (both_available / total_results) * 100
+                "ensemble_coverage": (both_available / total_results) * 100,
             },
-            "weights": {
-                "finbert": self.finbert_weight,
-                "lexicon": self.lexicon_weight
-            }
+            "weights": {"finbert": self.finbert_weight, "lexicon": self.lexicon_weight},
         }
 
     def update_weights(self, finbert_weight: float, lexicon_weight: float):
@@ -340,11 +345,11 @@ class EnsembleSentimentAnalyzer:
             "finbert": {
                 "enabled": self.enable_finbert,
                 "available": self.finbert_analyzer is not None,
-                "weight": self.finbert_weight
+                "weight": self.finbert_weight,
             },
             "lexicon": {
                 "enabled": self.enable_lexicon,
                 "available": self.lexicon_analyzer is not None,
-                "weight": self.lexicon_weight
-            }
+                "weight": self.lexicon_weight,
+            },
         }

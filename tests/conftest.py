@@ -1,14 +1,15 @@
 """
 Pytest configuration and fixtures for the test suite.
 """
+
 import os
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 import pytest
 
 # Add the project root to the Python path
 import sys
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__),
-    '..')))
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 # Fixtures for testing
 
@@ -20,7 +21,7 @@ def sample_news_data():
         "title": "Tech Company Reports Record Earnings",
         "content": "The company reported a 20% increase in quarterly revenue.",
         "source": "Financial Times",
-        "published_at": "2025-01-01T12:00:00Z"
+        "published_at": "2025-01-01T12:00:00Z",
     }
 
 
@@ -36,16 +37,20 @@ def sample_tweet_data():
             "retweet_count": 42,
             "reply_count": 10,
             "like_count": 150,
-            "quote_count": 5
-        }
+            "quote_count": 5,
+        },
     }
+
 
 @pytest.fixture
 def mock_env_vars():
     """Mock environment variables for testing."""
-    with patch.dict(os.environ, {
-        "NEWS_API_KEY": "test_news_api_key",
-        "TWITTER_BEARER_TOKEN": "test_twitter_token",
-        "MONGODB_URI": "mongodb://test:test@localhost:27017/test_db"
-    }):
+    with patch.dict(
+        os.environ,
+        {
+            "NEWS_API_KEY": "test_news_api_key",
+            "TWITTER_BEARER_TOKEN": "test_twitter_token",
+            "MONGODB_URI": "mongodb://test:test@localhost:27017/test_db",
+        },
+    ):
         yield

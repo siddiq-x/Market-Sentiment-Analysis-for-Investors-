@@ -1,6 +1,7 @@
 """
 Base connector class for data ingestion
 """
+
 from abc import ABC, abstractmethod
 from typing import Dict, List, Any, Optional
 from datetime import datetime
@@ -11,6 +12,7 @@ from dataclasses import dataclass
 @dataclass
 class DataPoint:
     """Standard data point structure"""
+
     source: str
     timestamp: datetime
     content: str
@@ -49,15 +51,15 @@ class BaseConnector(ABC):
         """Calculate credibility score for a source"""
         # Base implementation - can be overridden
         domain_scores = {
-            'reuters.com': 0.95,
-            'bloomberg.com': 0.95,
-            'wsj.com': 0.90,
-            'cnbc.com': 0.85,
-            'marketwatch.com': 0.80,
-            'yahoo.com': 0.75,
-            'twitter.com': 0.60,
-            'reddit.com': 0.50
+            "reuters.com": 0.95,
+            "bloomberg.com": 0.95,
+            "wsj.com": 0.90,
+            "cnbc.com": 0.85,
+            "marketwatch.com": 0.80,
+            "yahoo.com": 0.75,
+            "twitter.com": 0.60,
+            "reddit.com": 0.50,
         }
 
-        domain = source_info.get('domain', '').lower()
+        domain = source_info.get("domain", "").lower()
         return domain_scores.get(domain, 0.70)  # Default score

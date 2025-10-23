@@ -2,11 +2,12 @@
 Quick start example for the Market Sentiment Analysis System
 This script demonstrates basic usage of the system components
 """
+
 import sys
 import os
 
 # Add src to path
-sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))  # noqa: E402
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", "src"))  # noqa: E402
 
 from data_ingestion.ingestion_manager import IngestionManager  # noqa: E402
 from sentiment.ensemble_analyzer import EnsembleSentimentAnalyzer  # noqa: E402
@@ -28,7 +29,7 @@ def basic_sentiment_analysis():
         "Tesla stock plummets amid production concerns and supply chain issues",
         "Microsoft maintains steady growth in cloud computing segment",
         "Market volatility increases due to geopolitical tensions",
-        "Strong GDP growth signals economic recovery"
+        "Strong GDP growth signals economic recovery",
     ]
 
     print("\nAnalyzing sample financial texts:")
@@ -39,7 +40,9 @@ def basic_sentiment_analysis():
         sentiment_label = {-1: "Bearish", 0: "Neutral", 1: "Bullish"}[result.sentiment]
 
         print(f"Text: {text[:60]}...")
-        print(f"Sentiment: {sentiment_label} (Score: {result.ensemble_score:.3f}, Confidence: {result.confidence:.3f})")
+        print(
+            f"Sentiment: {sentiment_label} (Score: {result.ensemble_score:.3f}, Confidence: {result.confidence:.3f})"
+        )
         print()
 
 
@@ -56,7 +59,7 @@ def data_ingestion_demo():
 
     try:
         # Fetch data for the last 6 hours
-        data_points = manager.fetch_all_data(['AAPL'], hours_back=6)
+        data_points = manager.fetch_all_data(["AAPL"], hours_back=6)
 
         if data_points:
             print(f"Successfully fetched {len(data_points)} data points")
@@ -103,7 +106,7 @@ def text_preprocessing_demo():
 
     # Extract entities
     entities = ner_extractor.extract_entities(cleaned_text)
-    print(f"\nExtracted entities:")
+    print("\nExtracted entities:")
     for entity_type, entity_list in entities.items():
         if entity_list:
             print(f"{entity_type}: {', '.join(entity_list)}")
@@ -123,7 +126,7 @@ def fusion_model_demo():
     # Show model summary
     try:
         model_info = fusion_manager.get_model_summary()
-        print(f"\nModel Summary:")
+        print("\nModel Summary:")
         print(f"Input features: {model_info.get('input_features', 'N/A')}")
         print(f"Model type: {model_info.get('model_type', 'LSTM with Attention')}")
         print(f"Parameters: {model_info.get('total_params', 'N/A')}")
@@ -136,7 +139,9 @@ def end_to_end_demo():
     print("=== End-to-End Pipeline Demo ===")
 
     # Sample pipeline workflow
-    sample_news = "Apple Inc. reported strong quarterly results with revenue growth of 15%"
+    sample_news = (
+        "Apple Inc. reported strong quarterly results with revenue growth of 15%"
+    )
 
     print(f"Processing: {sample_news}")
     print("\nPipeline steps:")
@@ -155,7 +160,9 @@ def end_to_end_demo():
     analyzer = EnsembleSentimentAnalyzer()
     sentiment = analyzer.analyze_sentiment(cleaned)
     sentiment_label = {-1: "Bearish", 0: "Neutral", 1: "Bullish"}[sentiment.sentiment]
-    print(f"3. Sentiment Analysis: {sentiment_label} (Score: {sentiment.ensemble_score:.3f})")
+    print(
+        f"3. Sentiment Analysis: {sentiment_label} (Score: {sentiment.ensemble_score:.3f})"
+    )
 
     # Step 4: Feature preparation (simulated)
     print("4. Feature Engineering: Combining sentiment with market data...")
@@ -174,7 +181,7 @@ def main():
         ("Text Preprocessing", text_preprocessing_demo),
         ("Data Ingestion", data_ingestion_demo),
         ("Fusion Model", fusion_model_demo),
-        ("End-to-End Pipeline", end_to_end_demo)
+        ("End-to-End Pipeline", end_to_end_demo),
     ]
 
     for i, (name, demo_func) in enumerate(demos, 1):

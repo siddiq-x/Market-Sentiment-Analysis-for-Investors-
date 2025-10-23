@@ -1,6 +1,7 @@
 """
 Text cleaning and preprocessing utilities
 """
+
 import re
 import string
 from typing import List, Dict, Any, Optional
@@ -15,20 +16,21 @@ from nltk.tag import pos_tag
 
 # Download required NLTK data
 try:
-    nltk.data.find('tokenizers/punkt')
-    nltk.data.find('corpora/stopwords')
-    nltk.data.find('corpora/wordnet')
-    nltk.data.find('taggers/averaged_perceptron_tagger')
+    nltk.data.find("tokenizers/punkt")
+    nltk.data.find("corpora/stopwords")
+    nltk.data.find("corpora/wordnet")
+    nltk.data.find("taggers/averaged_perceptron_tagger")
 except LookupError:
-    nltk.download('punkt', quiet=True)
-    nltk.download('stopwords', quiet=True)
-    nltk.download('wordnet', quiet=True)
-    nltk.download('averaged_perceptron_tagger', quiet=True)
+    nltk.download("punkt", quiet=True)
+    nltk.download("stopwords", quiet=True)
+    nltk.download("wordnet", quiet=True)
+    nltk.download("averaged_perceptron_tagger", quiet=True)
 
 
 @dataclass
 class CleanedText:
     """Container for cleaned text data"""
+
     original: str
     cleaned: str
     tokens: List[str]
@@ -49,33 +51,47 @@ class TextCleaner:
 
         # Financial stop words (in addition to standard ones)
         self.financial_stopwords = {
-            'stock', 'share', 'market', 'trading', 'trader', 'investor',
-            'investment', 'financial', 'finance', 'money', 'dollar', 'price',
-            'company', 'corp', 'inc', 'ltd', 'llc'
+            "stock",
+            "share",
+            "market",
+            "trading",
+            "trader",
+            "investor",
+            "investment",
+            "financial",
+            "finance",
+            "money",
+            "dollar",
+            "price",
+            "company",
+            "corp",
+            "inc",
+            "ltd",
+            "llc",
         }
 
         # Standard English stop words
         try:
-            self.stop_words = set(stopwords.words('english'))
-        except:
+            self.stop_words = set(stopwords.words("english"))
+        except Exception:
             self.stop_words = set()
 
         # Financial abbreviations and their expansions
         self.financial_abbreviations = {
-            'ipo': 'initial public offering',
-            'ceo': 'chief executive officer',
-            'cfo': 'chief financial officer',
-            'eps': 'earnings per share',
-            'pe': 'price to earnings',
-            'pb': 'price to book',
-            'roe': 'return on equity',
-            'roa': 'return on assets',
-            'ebitda': 'earnings before interest taxes depreciation amortization',
-            'yoy': 'year over year',
-            'qoq': 'quarter over quarter',
-            'atm': 'at the money',
-            'otm': 'out of the money',
-            'itm': 'in the money'
+            "ipo": "initial public offering",
+            "ceo": "chief executive officer",
+            "cfo": "chief financial officer",
+            "eps": "earnings per share",
+            "pe": "price to earnings",
+            "pb": "price to book",
+            "roe": "return on equity",
+            "roa": "return on assets",
+            "ebitda": "earnings before interest taxes depreciation amortization",
+            "yoy": "year over year",
+            "qoq": "quarter over quarter",
+            "atm": "at the money",
+            "otm": "out of the money",
+            "itm": "in the money",
         }
 
         # Compile regex patterns
@@ -85,39 +101,43 @@ class TextCleaner:
         """Compile commonly used regex patterns"""
         # URLs
         self.url_pattern = re.compile(
-            r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+'
+            r"http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+"
         )
 
         # Email addresses
-        self.email_pattern = re.compile(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b')
+        self.email_pattern = re.compile(
+            r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b"
+        )
 
         # Stock tickers ($AAPL, AAPL)
-        self.ticker_pattern = re.compile(r'\$?([A-Z]{1,5})\b')
+        self.ticker_pattern = re.compile(r"\$?([A-Z]{1,5})\b")
 
         # Numbers with currency symbols
-        self.currency_pattern = re.compile(r'[\$£€¥₹]\s*[\d,]+\.?\d*[BMK]?')
+        self.currency_pattern = re.compile(r"[\$£€¥₹]\s*[\d,]+\.?\d*[BMK]?")
 
         # Percentages
-        self.percentage_pattern = re.compile(r'\d+\.?\d*\s*%')
+        self.percentage_pattern = re.compile(r"\d+\.?\d*\s*%")
 
         # Social media handles
-        self.handle_pattern = re.compile(r'@[A-Za-z0-9_]+')
+        self.handle_pattern = re.compile(r"@[A-Za-z0-9_]+")
 
         # Hashtags
-        self.hashtag_pattern = re.compile(r'#[A-Za-z0-9_]+')
+        self.hashtag_pattern = re.compile(r"#[A-Za-z0-9_]+")
 
         # Multiple whitespace
-        self.whitespace_pattern = re.compile(r'\s+')
+        self.whitespace_pattern = re.compile(r"\s+")
 
         # HTML tags
-        self.html_pattern = re.compile(r'<[^>]+>')
+        self.html_pattern = re.compile(r"<[^>]+>")
 
-    def clean_text(self,
-                   text: str,
-                   preserve_tickers: bool = True,
-                   preserve_numbers: bool = True,
-                   remove_stopwords: bool = False,
-                   lemmatize: bool = True) -> CleanedText:
+    def clean_text(
+        self,
+        text: str,
+        preserve_tickers: bool = True,
+        preserve_numbers: bool = True,
+        remove_stopwords: bool = False,
+        lemmatize: bool = True,
+    ) -> CleanedText:
         """
         Comprehensive text cleaning for financial content
 
@@ -137,7 +157,7 @@ class TextCleaner:
             "preserve_tickers": preserve_tickers,
             "preserve_numbers": preserve_numbers,
             "remove_stopwords": remove_stopwords,
-            "lemmatize": lemmatize
+            "lemmatize": lemmatize,
         }
 
         # Step 1: Extract important entities before cleaning
@@ -146,27 +166,27 @@ class TextCleaner:
         percentages = self._extract_percentages(text) if preserve_numbers else []
 
         # Step 2: Remove HTML tags
-        text = self.html_pattern.sub(' ', text)
+        text = self.html_pattern.sub(" ", text)
 
         # Step 3: Remove URLs (but keep domain info in metadata)
         urls = self.url_pattern.findall(text)
-        text = self.url_pattern.sub(' [URL] ', text)
+        text = self.url_pattern.sub(" [URL] ", text)
 
         # Step 4: Remove email addresses
         emails = self.email_pattern.findall(text)
-        text = self.email_pattern.sub(' [EMAIL] ', text)
+        text = self.email_pattern.sub(" [EMAIL] ", text)
 
         # Step 5: Handle social media elements
         handles = self.handle_pattern.findall(text)
         hashtags = self.hashtag_pattern.findall(text)
-        text = self.handle_pattern.sub(' ', text)
-        text = self.hashtag_pattern.sub(' ', text)
+        text = self.handle_pattern.sub(" ", text)
+        text = self.hashtag_pattern.sub(" ", text)
 
         # Step 6: Expand financial abbreviations
         text = self._expand_abbreviations(text)
 
         # Step 7: Normalize whitespace and punctuation
-        text = self.whitespace_pattern.sub(' ', text)
+        text = self.whitespace_pattern.sub(" ", text)
         text = text.strip()
 
         # Step 8: Convert to lowercase (but preserve ticker case)
@@ -176,7 +196,9 @@ class TextCleaner:
             for i, ticker in enumerate(tickers):
                 placeholder = f"TICKER{i}PLACEHOLDER"
                 ticker_placeholders[placeholder] = ticker
-                text = re.sub(rf'\b{re.escape(ticker)}\b', placeholder, text, flags=re.IGNORECASE)
+                text = re.sub(
+                    rf"\b{re.escape(ticker)}\b", placeholder, text, flags=re.IGNORECASE
+                )
 
         text = text.lower()
 
@@ -186,61 +208,100 @@ class TextCleaner:
                 text = text.replace(placeholder.lower(), ticker)
 
         # Step 9: Remove extra punctuation (but keep sentence structure)
-        text = re.sub(r'[^\w\s\.\!\?\$\%\-]', ' ', text)
-        text = self.whitespace_pattern.sub(' ', text).strip()
+        text = re.sub(r"[^\w\s\.\!\?\$\%\-]", " ", text)
+        text = self.whitespace_pattern.sub(" ", text).strip()
 
         # Step 10: Tokenization
         try:
             tokens = word_tokenize(text)
             sentences = sent_tokenize(text)
-        except:
+        except Exception:
             tokens = text.split()
             sentences = [text]
 
         # Step 11: Remove stopwords if requested
         if remove_stopwords:
-            tokens = [token for token in tokens
-                     if token.lower() not in self.stop_words
-                     and token.lower() not in self.financial_stopwords]
+            tokens = [
+                token
+                for token in tokens
+                if token.lower() not in self.stop_words
+                and token.lower() not in self.financial_stopwords
+            ]
 
         # Step 12: Lemmatization
         if lemmatize:
             tokens = self._lemmatize_tokens(tokens)
 
         # Reconstruct cleaned text
-        cleaned_text = ' '.join(tokens)
+        cleaned_text = " ".join(tokens)
 
         # Update metadata
-        metadata.update({
-            "cleaned_length": len(cleaned_text),
-            "token_count": len(tokens),
-            "sentence_count": len(sentences),
-            "extracted_tickers": tickers,
-            "extracted_currencies": currencies,
-            "extracted_percentages": percentages,
-            "extracted_urls": urls,
-            "extracted_emails": emails,
-            "extracted_handles": handles,
-            "extracted_hashtags": hashtags
-        })
+        metadata.update(
+            {
+                "cleaned_length": len(cleaned_text),
+                "token_count": len(tokens),
+                "sentence_count": len(sentences),
+                "extracted_tickers": tickers,
+                "extracted_currencies": currencies,
+                "extracted_percentages": percentages,
+                "extracted_urls": urls,
+                "extracted_emails": emails,
+                "extracted_handles": handles,
+                "extracted_hashtags": hashtags,
+            }
+        )
 
         return CleanedText(
             original=original_text,
             cleaned=cleaned_text,
             tokens=tokens,
             sentences=sentences,
-            metadata=metadata
+            metadata=metadata,
         )
 
     def _extract_tickers(self, text: str) -> List[str]:
         """Extract stock tickers from text"""
         matches = self.ticker_pattern.findall(text.upper())
         # Filter out common false positives
-        false_positives = {'THE', 'AND', 'FOR', 'ARE', 'BUT', 'NOT', 'YOU',
-    'ALL', 'CAN', 'HER', 'WAS', 'ONE', 'OUR', 'HAD', 'BY', 'UP', 'DO', 'NO',
-    'IF', 'MY', 'ON', 'AS', 'WE', 'HE', 'BE', 'TO', 'OF', 'IT', 'IS', 'IN',
-    'AT', 'OR'}
-        return [ticker for ticker in matches if ticker not in false_positives and len(ticker) <= 5]
+        false_positives = {
+            "THE",
+            "AND",
+            "FOR",
+            "ARE",
+            "BUT",
+            "NOT",
+            "YOU",
+            "ALL",
+            "CAN",
+            "HER",
+            "WAS",
+            "ONE",
+            "OUR",
+            "HAD",
+            "BY",
+            "UP",
+            "DO",
+            "NO",
+            "IF",
+            "MY",
+            "ON",
+            "AS",
+            "WE",
+            "HE",
+            "BE",
+            "TO",
+            "OF",
+            "IT",
+            "IS",
+            "IN",
+            "AT",
+            "OR",
+        }
+        return [
+            ticker
+            for ticker in matches
+            if ticker not in false_positives and len(ticker) <= 5
+        ]
 
     def _extract_currencies(self, text: str) -> List[str]:
         """Extract currency amounts from text"""
@@ -262,7 +323,7 @@ class TextCleaner:
             else:
                 expanded_words.append(word)
 
-        return ' '.join(expanded_words)
+        return " ".join(expanded_words)
 
     def _lemmatize_tokens(self, tokens: List[str]) -> List[str]:
         """Apply lemmatization to tokens"""
@@ -284,7 +345,7 @@ class TextCleaner:
                     lemmatized.append(self.lemmatizer.lemmatize(token))
 
             return lemmatized
-        except:
+        except Exception:
             # Fallback to simple lemmatization or original tokens
             if self.lemmatizer is None:
                 return tokens
@@ -292,14 +353,14 @@ class TextCleaner:
 
     def _get_wordnet_pos(self, treebank_tag: str) -> Optional[str]:
         """Convert TreeBank POS tag to WordNet POS tag"""
-        if treebank_tag.startswith('J'):
-            return 'a'  # adjective
-        elif treebank_tag.startswith('V'):
-            return 'v'  # verb
-        elif treebank_tag.startswith('N'):
-            return 'n'  # noun
-        elif treebank_tag.startswith('R'):
-            return 'r'  # adverb
+        if treebank_tag.startswith("J"):
+            return "a"  # adjective
+        elif treebank_tag.startswith("V"):
+            return "v"  # verb
+        elif treebank_tag.startswith("N"):
+            return "n"  # noun
+        elif treebank_tag.startswith("R"):
+            return "r"  # adverb
         else:
             return None
 
@@ -312,11 +373,16 @@ class TextCleaner:
         if not cleaned_texts:
             return {}
 
-        total_original = sum(ct.metadata.get("original_length", 0) for ct in cleaned_texts)
-        total_cleaned = sum(ct.metadata.get("cleaned_length", 0) for ct in cleaned_texts)
+        total_original = sum(
+            ct.metadata.get("original_length", 0) for ct in cleaned_texts
+        )
+        total_cleaned = sum(
+            ct.metadata.get("cleaned_length", 0) for ct in cleaned_texts
+        )
         total_tokens = sum(ct.metadata.get("token_count", 0) for ct in cleaned_texts)
-        total_sentences = sum(ct.metadata.get("sentence_count", 0) for ct in
-    cleaned_texts)
+        total_sentences = sum(
+            ct.metadata.get("sentence_count", 0) for ct in cleaned_texts
+        )
 
         all_tickers = set()
         for ct in cleaned_texts:
@@ -326,10 +392,12 @@ class TextCleaner:
             "total_texts": len(cleaned_texts),
             "total_original_chars": total_original,
             "total_cleaned_chars": total_cleaned,
-            "compression_ratio": total_cleaned / total_original if total_original > 0 else 0,
+            "compression_ratio": (
+                total_cleaned / total_original if total_original > 0 else 0
+            ),
             "total_tokens": total_tokens,
             "total_sentences": total_sentences,
             "avg_tokens_per_text": total_tokens / len(cleaned_texts),
             "unique_tickers_found": len(all_tickers),
-            "tickers": list(all_tickers)
+            "tickers": list(all_tickers),
         }

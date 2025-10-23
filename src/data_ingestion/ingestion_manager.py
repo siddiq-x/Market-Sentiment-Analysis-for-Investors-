@@ -1,9 +1,8 @@
 """
 Data Ingestion Manager - Orchestrates all data connectors
 """
+
 from typing import Dict, List, Any, Optional
-from datetime import datetime
-import asyncio
 import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import json
@@ -26,10 +25,10 @@ class IngestionManager:
     def _initialize_connectors(self):
         """Initialize all available connectors"""
         try:
-            self.connectors['news'] = NewsConnector()
-            self.connectors['market'] = MarketConnector()
-            self.connectors['twitter'] = SocialConnector()
-            self.connectors['reddit'] = RedditConnector()
+            self.connectors["news"] = NewsConnector()
+            self.connectors["market"] = MarketConnector()
+            self.connectors["twitter"] = SocialConnector()
+            self.connectors["reddit"] = RedditConnector()
 
             self.logger.info(f"Initialized {len(self.connectors)} connectors")
 
@@ -44,31 +43,46 @@ class IngestionManager:
             try:
                 status = connector.connect()
                 connection_status[name] = status
-                self.logger.info(f"Connector {name}: {'Connected' if status else 'Failed'}")
+                self.logger.info(
+                    f"Connector {name}: {'Connected' if status else 'Failed'}"
+                )
             except Exception as e:
                 connection_status[name] = False
                 self.logger.error(f"Error connecting {name}: {str(e)}")
 
         return connection_status
 
-    def fetch_all_data(self,
-                      tickers: Optional[List[str]] = None,
-                      hours_back: int = 24,
-                      max_workers: int = 4) -> List[DataPoint]:
+    def fetch_all_data(
+        self,
+        tickers: Optional[List[str]] = None,
+        hours_back: int = 24,
+        max_workers: int = 4,
+    ) -> List[DataPoint]:
         """Fetch data from all connectors in parallel"""
         tickers = tickers or config.monitored_tickers
         all_data = []
 
         # Define fetch tasks for each connector
         fetch_tasks = [
-            ('news', lambda: self.connectors['news'].fetch_data(
-                tickers=tickers, hours_back=hours_back)),
-            ('market', lambda: self.connectors['market'].fetch_data(
-                tickers=tickers, period="1d", interval="1h")),
-            ('twitter', lambda: self.connectors['twitter'].fetch_data(
-                tickers=tickers, hours_back=hours_back, max_tweets=100)),
-            ('reddit', lambda: self.connectors['reddit'].fetch_data(
-                max_posts=50))
+            (
+                "news",
+                lambda: self.connectors["news"].fetch_data(
+                    tickers=tickers, hours_back=hours_back
+                ),
+            ),
+            (
+                "market",
+                lambda: self.connectors["market"].fetch_data(
+                    tickers=tickers, period="1d", interval="1h"
+                ),
+            ),
+            (
+                "twitter",
+                lambda: self.connectors["twitter"].fetch_data(
+                    tickers=tickers, hours_back=hours_back, max_tweets=100
+                ),
+            ),
+            ("reddit", lambda: self.connectors["reddit"].fetch_data(max_posts=50)),
         ]
 
         # Execute tasks in parallel
@@ -89,7 +103,15 @@ class IngestionManager:
                     self.logger.error(f"Error fetching from {connector_name}: {str(e)}")
 
         # Sort by timestamp (newest first)
-        all_data.sort(key=lambda x: x.timestamp, reverse=True)
+        def _normalize_dt(dt):
+            # Ensure comparable datetimes by dropping tzinfo for aware datetimes
+            # and leaving naive datetimes as-is
+            try:
+                return dt.replace(tzinfo=None) if getattr(dt, "tzinfo", None) else dt
+            except Exception:
+                return dt
+
+        all_data.sort(key=lambda x: _normalize_dt(x.timestamp), reverse=True)
 
         self.logger.info(f"Total data points collected: {len(all_data)}")
         return all_data
@@ -114,7 +136,7 @@ class IngestionManager:
             status[name] = {
                 "connected": connector.is_healthy(),
                 "name": connector.name,
-                "config_keys": list(connector.config.keys())
+                "config_keys": list(connector.config.keys()),
             }
 
         return status
@@ -126,14 +148,14 @@ class IngestionManager:
         # Check main config
         missing_config = config.validate()
         if missing_config:
-            validation_results['main_config'] = missing_config
+            validation_results["main_config"] = missing_config
 
         # Check connector-specific requirements
         connector_requirements = {
-            'news': ['NEWS_API_KEY'],
-            'twitter': ['TWITTER_BEARER_TOKEN'],
-            'market': ['ALPHA_VANTAGE_API_KEY'],  # Optional for Yahoo Finance
-            'reddit': []  # No API key required for public API
+            "news": ["NEWS_API_KEY"],
+            "twitter": ["TWITTER_BEARER_TOKEN"],
+            "market": ["ALPHA_VANTAGE_API_KEY"],  # Optional for Yahoo Finance
+            "reddit": [],  # No API key required for public API
         }
 
         for connector_name, required_keys in connector_requirements.items():
@@ -152,18 +174,21 @@ class IngestionManager:
         if format.lower() == "json":
             export_data = []
             for dp in data:
-                export_data.append({
-                    "source": dp.source,
-                    "timestamp": dp.timestamp.isoformat(),
-                    "content": dp.content,
-                    "ticker": dp.ticker,
-                    "credibility_score": dp.credibility_score,
-                    "metadata": dp.metadata
-                })
+                export_data.append(
+                    {
+                        "source": dp.source,
+                        "timestamp": dp.timestamp.isoformat(),
+                        "content": dp.content,
+                        "ticker": dp.ticker,
+                        "credibility_score": dp.credibility_score,
+                        "metadata": dp.metadata,
+                    }
+                )
             return json.dumps(export_data, indent=2)
 
         elif format.lower() == "csv":
             import pandas as pd
+
             df_data = []
             for dp in data:
                 row = {
@@ -171,7 +196,7 @@ class IngestionManager:
                     "timestamp": dp.timestamp.isoformat(),
                     "content": dp.content,
                     "ticker": dp.ticker,
-                    "credibility_score": dp.credibility_score
+                    "credibility_score": dp.credibility_score,
                 }
                 # Flatten metadata
                 for key, value in dp.metadata.items():
@@ -192,6 +217,7 @@ class IngestionManager:
                 self.logger.info(f"Disconnected {name}")
             except Exception as e:
                 self.logger.error(f"Error disconnecting {name}: {str(e)}")
+
 
 # Singleton instance
 ingestion_manager = IngestionManager()

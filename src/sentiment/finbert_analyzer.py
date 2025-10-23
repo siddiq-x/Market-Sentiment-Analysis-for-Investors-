@@ -1,12 +1,12 @@
 """
 FinBERT-based sentiment analysis for financial content
 """
+
 import torch
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 from typing import Dict, List, Any, Optional, Tuple
 import logging
 from dataclasses import dataclass
-import numpy as np
 from datetime import datetime
 import os
 
@@ -16,6 +16,7 @@ from config.config import config
 @dataclass
 class SentimentResult:
     """Container for sentiment analysis results"""
+
     text: str
     sentiment: str  # 'positive', 'negative', 'neutral'
     confidence: float
@@ -38,17 +39,33 @@ class FinBERTAnalyzer:
         self._model_loaded = False
 
         # Sentiment mappings
-        self.label_mapping = {
-            0: "negative",
-            1: "neutral",
-            2: "positive"
-        }
+        self.label_mapping = {0: "negative", 1: "neutral", 2: "positive"}
 
         # Financial context adjustments
         self.financial_modifiers = {
-            'strong_positive': ['rally', 'surge', 'soar', 'boom', 'bullish', 'outperform'],
-            'strong_negative': ['crash', 'plunge', 'collapse', 'bearish', 'underperform', 'decline'],
-            'uncertainty': ['volatile', 'uncertain', 'mixed', 'cautious', 'wait-and-see']
+            "strong_positive": [
+                "rally",
+                "surge",
+                "soar",
+                "boom",
+                "bullish",
+                "outperform",
+            ],
+            "strong_negative": [
+                "crash",
+                "plunge",
+                "collapse",
+                "bearish",
+                "underperform",
+                "decline",
+            ],
+            "uncertainty": [
+                "volatile",
+                "uncertain",
+                "mixed",
+                "cautious",
+                "wait-and-see",
+            ],
         }
 
         self.logger.info(f"Initialized FinBERT analyzer with model: {model_name}")
@@ -63,7 +80,9 @@ class FinBERTAnalyzer:
             self.logger.info(f"Loading FinBERT model: {self.model_name}")
 
             self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
-            self.model = AutoModelForSequenceClassification.from_pretrained(self.model_name)
+            self.model = AutoModelForSequenceClassification.from_pretrained(
+                self.model_name
+            )
             self.model.to(self.device)
             self.model.eval()
 
@@ -79,7 +98,9 @@ class FinBERTAnalyzer:
                 )
                 self.model_name = "distilbert-base-uncased-finetuned-sst-2-english"
                 self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
-                self.model = AutoModelForSequenceClassification.from_pretrained(self.model_name)
+                self.model = AutoModelForSequenceClassification.from_pretrained(
+                    self.model_name
+                )
                 self.model.to(self.device)
                 self.model.eval()
 
@@ -90,11 +111,14 @@ class FinBERTAnalyzer:
                 self.logger.info("Fallback model loaded successfully")
 
             except Exception as fallback_error:
-                self.logger.error(f"Fallback model loading failed: {str(fallback_error)}")
+                self.logger.error(
+                    f"Fallback model loading failed: {str(fallback_error)}"
+                )
                 raise RuntimeError("Failed to load any sentiment analysis model")
 
-    def analyze_sentiment(self, text: str, context: Optional[Dict[str, Any]] =
-    None) -> SentimentResult:
+    def analyze_sentiment(
+        self, text: str, context: Optional[Dict[str, Any]] = None
+    ) -> SentimentResult:
         """
         Analyze sentiment of financial text
 
@@ -109,7 +133,7 @@ class FinBERTAnalyzer:
                 confidence=0.0,
                 scores={"negative": 0.33, "neutral": 0.34, "positive": 0.33},
                 timestamp=datetime.now(),
-                metadata={"error": "Empty text"}
+                metadata={"error": "Empty text"},
             )
 
         # Load model if not already loaded
@@ -123,7 +147,9 @@ class FinBERTAnalyzer:
         raw_scores = self._get_raw_sentiment(processed_text)
 
         # Apply financial context adjustments
-        adjusted_scores = self._apply_financial_context(processed_text, raw_scores, context)
+        adjusted_scores = self._apply_financial_context(
+            processed_text, raw_scores, context
+        )
 
         # Determine final sentiment and confidence
         sentiment, confidence = self._determine_sentiment(adjusted_scores)
@@ -134,7 +160,7 @@ class FinBERTAnalyzer:
             "processed_length": len(processed_text),
             "model_name": self.model_name,
             "device": str(self.device),
-            "context": context or {}
+            "context": context or {},
         }
 
         return SentimentResult(
@@ -143,7 +169,7 @@ class FinBERTAnalyzer:
             confidence=confidence,
             scores=adjusted_scores,
             timestamp=datetime.now(),
-            metadata=metadata
+            metadata=metadata,
         )
 
     def _preprocess_text(self, text: str) -> str:
@@ -152,7 +178,7 @@ class FinBERTAnalyzer:
         text = text.strip()
 
         # Limit length to model's max sequence length
-        max_length = getattr(self.tokenizer, 'model_max_length', 512)
+        max_length = getattr(self.tokenizer, "model_max_length", 512)
         if len(text) > max_length:
             # Try to keep the most important parts (beginning and end)
             half_length = (max_length - 50) // 2
@@ -165,11 +191,7 @@ class FinBERTAnalyzer:
         try:
             # Tokenize
             inputs = self.tokenizer(
-                text,
-                return_tensors="pt",
-                truncation=True,
-                padding=True,
-                max_length=512
+                text, return_tensors="pt", truncation=True, padding=True, max_length=512
             )
 
             # Move to device
@@ -189,13 +211,13 @@ class FinBERTAnalyzer:
                 return {
                     "negative": float(scores[0]),
                     "neutral": float(scores[1]),
-                    "positive": float(scores[2])
+                    "positive": float(scores[2]),
                 }
             elif len(scores) == 2:  # Binary classification
                 return {
                     "negative": float(scores[0]),
                     "positive": float(scores[1]),
-                    "neutral": 0.0
+                    "neutral": 0.0,
                 }
             else:
                 raise ValueError(f"Unexpected number of classes: {len(scores)}")
@@ -217,37 +239,43 @@ class FinBERTAnalyzer:
 
         # Check for strong financial indicators
         strong_positive_count = sum(
-            1 for word in self.financial_modifiers['strong_positive'] if word in text_lower
+            1
+            for word in self.financial_modifiers["strong_positive"]
+            if word in text_lower
         )
-        strong_negative_count = sum(1 for word in
-    self.financial_modifiers['strong_negative']
-                                  if word in text_lower)
-        uncertainty_count = sum(1 for word in
-    self.financial_modifiers['uncertainty']
-                              if word in text_lower)
+        strong_negative_count = sum(
+            1
+            for word in self.financial_modifiers["strong_negative"]
+            if word in text_lower
+        )
+        uncertainty_count = sum(
+            1 for word in self.financial_modifiers["uncertainty"] if word in text_lower
+        )
 
         # Apply adjustments
         if strong_positive_count > 0:
             boost = min(0.2, strong_positive_count * 0.1)
             adjusted_scores["positive"] = min(1.0, adjusted_scores["positive"] + boost)
-            adjusted_scores["negative"] = max(0.0, adjusted_scores["negative"]
-    - boost/2)
+            adjusted_scores["negative"] = max(
+                0.0, adjusted_scores["negative"] - boost / 2
+            )
 
         if strong_negative_count > 0:
             boost = min(0.2, strong_negative_count * 0.1)
-            adjusted_scores["negative"] = min(1.0, adjusted_scores["negative"]
-    + boost)
-            adjusted_scores["positive"] = max(0.0, adjusted_scores["positive"]
-    - boost/2)
+            adjusted_scores["negative"] = min(1.0, adjusted_scores["negative"] + boost)
+            adjusted_scores["positive"] = max(
+                0.0, adjusted_scores["positive"] - boost / 2
+            )
 
         if uncertainty_count > 0:
             boost = min(0.15, uncertainty_count * 0.05)
-            adjusted_scores["neutral"] = min(1.0, adjusted_scores["neutral"] +
-    boost)
-            adjusted_scores["positive"] = max(0.0, adjusted_scores["positive"]
-    - boost/2)
-            adjusted_scores["negative"] = max(0.0, adjusted_scores["negative"]
-    - boost/2)
+            adjusted_scores["neutral"] = min(1.0, adjusted_scores["neutral"] + boost)
+            adjusted_scores["positive"] = max(
+                0.0, adjusted_scores["positive"] - boost / 2
+            )
+            adjusted_scores["negative"] = max(
+                0.0, adjusted_scores["negative"] - boost / 2
+            )
 
         # Context-based adjustments
         if context:
@@ -259,25 +287,25 @@ class FinBERTAnalyzer:
                 max_score = max(adjusted_scores.values())
                 for key in adjusted_scores:
                     if adjusted_scores[key] == max_score:
-                        adjusted_scores[key] = min(1.0, adjusted_scores[key] +
-    0.05)
+                        adjusted_scores[key] = min(1.0, adjusted_scores[key] + 0.05)
 
             # Check for earnings-related content
-            if any(term in text_lower for term in ["earnings", "quarterly", "revenue", "profit"]):
+            if any(
+                term in text_lower
+                for term in ["earnings", "quarterly", "revenue", "profit"]
+            ):
                 # Earnings content tends to be more decisive
                 max_key = max(adjusted_scores.keys(), key=lambda k: adjusted_scores[k])
-                adjusted_scores[max_key] = min(1.0, adjusted_scores[max_key] +
-    0.1)
+                adjusted_scores[max_key] = min(1.0, adjusted_scores[max_key] + 0.1)
 
         # Normalize scores to sum to 1
         total = sum(adjusted_scores.values())
         if total > 0:
-            adjusted_scores = {k: v/total for k, v in adjusted_scores.items()}
+            adjusted_scores = {k: v / total for k, v in adjusted_scores.items()}
 
         return adjusted_scores
 
-    def _determine_sentiment(self, scores: Dict[str, float]) -> Tuple[str,
-    float]:
+    def _determine_sentiment(self, scores: Dict[str, float]) -> Tuple[str, float]:
         """Determine final sentiment and confidence from scores"""
         # Find the sentiment with highest score
         max_sentiment = max(scores.keys(), key=lambda k: scores[k])
@@ -330,15 +358,17 @@ class FinBERTAnalyzer:
         return {
             "total_analyzed": total_results,
             "sentiment_distribution": {
-                k: {"count": v, "percentage": (v/total_results)*100}
+                k: {"count": v, "percentage": (v / total_results) * 100}
                 for k, v in sentiment_counts.items()
             },
             "average_confidence": total_confidence / total_results,
-            "dominant_sentiment": max(sentiment_counts.keys(), key=lambda k:
-    sentiment_counts[k]),
+            "dominant_sentiment": max(
+                sentiment_counts.keys(), key=lambda k: sentiment_counts[k]
+            ),
             "sentiment_score": (
                 sentiment_counts["positive"] - sentiment_counts["negative"]
-            ) / total_results  # Overall sentiment score (-1 to 1)
+            )
+            / total_results,  # Overall sentiment score (-1 to 1)
         }
 
     def save_model_cache(self, cache_dir: str):
@@ -359,7 +389,9 @@ class FinBERTAnalyzer:
         try:
             if os.path.exists(cache_dir):
                 self.tokenizer = AutoTokenizer.from_pretrained(cache_dir)
-                self.model = AutoModelForSequenceClassification.from_pretrained(cache_dir)
+                self.model = AutoModelForSequenceClassification.from_pretrained(
+                    cache_dir
+                )
                 self.model.to(self.device)
                 self.model.eval()
                 self._model_loaded = True

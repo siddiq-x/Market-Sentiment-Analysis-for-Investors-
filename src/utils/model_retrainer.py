@@ -1,16 +1,14 @@
 """
 Continuous learning pipeline for model retraining
 """
+
 import schedule
 import time
 import logging
 from typing import Dict, List, Any, Optional
 from datetime import datetime, timedelta
-import pandas as pd
 import numpy as np
 from dataclasses import dataclass
-import pickle
-import os
 import threading
 
 from src.fusion.fusion_manager import FusionManager
@@ -22,6 +20,7 @@ from config.config import config
 @dataclass
 class ModelPerformanceMetrics:
     """Container for model performance metrics"""
+
     ticker: str
     accuracy: float
     precision: float
@@ -35,6 +34,7 @@ class ModelPerformanceMetrics:
 @dataclass
 class RetrainingJob:
     """Container for retraining job information"""
+
     ticker: str
     scheduled_time: datetime
     priority: str  # 'high', 'medium', 'low'
@@ -46,10 +46,12 @@ class RetrainingJob:
 class ModelRetrainer:
     """Handles continuous learning and model retraining"""
 
-    def __init__(self,
-                 performance_threshold: float = 0.7,
-                 min_data_points: int = 100,
-                 retraining_interval_days: int = 7):
+    def __init__(
+        self,
+        performance_threshold: float = 0.7,
+        min_data_points: int = 100,
+        retraining_interval_days: int = 7,
+    ):
         """
         Initialize model retrainer
 
@@ -89,8 +91,7 @@ class ModelRetrainer:
         schedule.every().day.at("02:00").do(self._evaluate_all_models)
 
         # Weekly full retraining
-        schedule.every().sunday.at("03:00").do(self._schedule_weekly_retraining
-    )
+        schedule.every().sunday.at("03:00").do(self._schedule_weekly_retraining)
 
         # Hourly drift detection
         schedule.every().hour.do(self._detect_model_drift)
@@ -150,23 +151,23 @@ class ModelRetrainer:
                 self.logger.error(f"Error in worker loop: {str(e)}")
                 time.sleep(60)
 
-    def record_prediction_performance(self,
-                                    ticker: str,
-                                    predicted: int,
-                                    actual: int,
-                                    confidence: float):
+    def record_prediction_performance(
+        self, ticker: str, predicted: int, actual: int, confidence: float
+    ):
         """Record prediction performance for evaluation"""
         if ticker not in self.performance_history:
             self.performance_history[ticker] = []
 
         # Store prediction result
-        self.performance_history[ticker].append({
-            'timestamp': datetime.now(),
-            'predicted': predicted,
-            'actual': actual,
-            'confidence': confidence,
-            'correct': predicted == actual
-        })
+        self.performance_history[ticker].append(
+            {
+                "timestamp": datetime.now(),
+                "predicted": predicted,
+                "actual": actual,
+                "confidence": confidence,
+                "correct": predicted == actual,
+            }
+        )
 
         # Keep only recent history (last 1000 predictions)
         if len(self.performance_history[ticker]) > 1000:
@@ -184,7 +185,9 @@ class ModelRetrainer:
         recent_predictions = self.performance_history[ticker][-20:]
 
         if len(recent_predictions) >= 10:
-            accuracy = sum(1 for p in recent_predictions if p['correct']) / len(recent_predictions)
+            accuracy = sum(1 for p in recent_predictions if p["correct"]) / len(
+                recent_predictions
+            )
 
             if accuracy < self.performance_threshold:
                 self.logger.warning(
@@ -193,8 +196,8 @@ class ModelRetrainer:
                 )
                 self._schedule_retraining(
                     ticker=ticker,
-                    priority='high',
-                    reason=f"Performance dropped to {accuracy:.3f}"
+                    priority="high",
+                    reason=f"Performance dropped to {accuracy:.3f}",
                 )
 
     def _evaluate_all_models(self):
@@ -211,7 +214,9 @@ class ModelRetrainer:
 
         self.logger.info("Daily model evaluation completed")
 
-    def _calculate_performance_metrics(self, ticker: str) -> Optional[ModelPerformanceMetrics]:
+    def _calculate_performance_metrics(
+        self, ticker: str
+    ) -> Optional[ModelPerformanceMetrics]:
         """Calculate performance metrics for a ticker"""
         if ticker not in self.performance_history:
             return None
@@ -219,16 +224,14 @@ class ModelRetrainer:
         # Get recent predictions (last 7 days)
         cutoff_time = datetime.now() - timedelta(days=7)
         recent_predictions = [
-            p for p in self.performance_history[ticker]
-            if p['timestamp'] >= cutoff_time
+            p for p in self.performance_history[ticker] if p["timestamp"] >= cutoff_time
         ]
 
         if len(recent_predictions) < 10:  # Need minimum predictions
             return None
 
         # Calculate metrics
-        correct_predictions = sum(1 for p in recent_predictions if
-    p['correct'])
+        correct_predictions = sum(1 for p in recent_predictions if p["correct"])
         total_predictions = len(recent_predictions)
         accuracy = correct_predictions / total_predictions
 
@@ -238,13 +241,20 @@ class ModelRetrainer:
         recall_scores = []
 
         for cls in classes:
-            true_positives = sum(1 for p in recent_predictions
-                               if p['predicted'] == cls and p['actual'] == cls)
+            true_positives = sum(
+                1
+                for p in recent_predictions
+                if p["predicted"] == cls and p["actual"] == cls
+            )
             false_positives = sum(
-                1 for p in recent_predictions if p['predicted'] == cls and p['actual'] != cls
+                1
+                for p in recent_predictions
+                if p["predicted"] == cls and p["actual"] != cls
             )
             false_negatives = sum(
-                1 for p in recent_predictions if p['predicted'] != cls and p['actual'] == cls
+                1
+                for p in recent_predictions
+                if p["predicted"] != cls and p["actual"] == cls
             )
 
             precision = (
@@ -277,7 +287,7 @@ class ModelRetrainer:
             f1_score=f1_score,
             prediction_count=total_predictions,
             correct_predictions=correct_predictions,
-            timestamp=datetime.now()
+            timestamp=datetime.now(),
         )
 
     def _evaluate_model_performance(self, metrics: ModelPerformanceMetrics):
@@ -288,8 +298,8 @@ class ModelRetrainer:
         if metrics.accuracy < self.performance_threshold:
             self._schedule_retraining(
                 ticker=ticker,
-                priority='high',
-                reason=f"Accuracy below threshold: {metrics.accuracy:.3f}"
+                priority="high",
+                reason=f"Accuracy below threshold: {metrics.accuracy:.3f}",
             )
             return
 
@@ -297,8 +307,8 @@ class ModelRetrainer:
         if metrics.f1_score < 0.6:
             self._schedule_retraining(
                 ticker=ticker,
-                priority='medium',
-                reason=f"F1 score below threshold: {metrics.f1_score:.3f}"
+                priority="medium",
+                reason=f"F1 score below threshold: {metrics.f1_score:.3f}",
             )
             return
 
@@ -306,7 +316,7 @@ class ModelRetrainer:
         if metrics.prediction_count < 20:
             self._schedule_retraining(
                 ticker=ticker,
-                priority='low',
+                priority="low",
                 reason="Insufficient recent predictions for reliable evaluation",
             )
 
@@ -329,29 +339,35 @@ class ModelRetrainer:
                 historical_cutoff = now - timedelta(days=7)
 
                 recent_predictions = [
-                    p for p in self.performance_history[ticker]
-                    if p['timestamp'] >= recent_cutoff
+                    p
+                    for p in self.performance_history[ticker]
+                    if p["timestamp"] >= recent_cutoff
                 ]
 
                 historical_predictions = [
-                    p for p in self.performance_history[ticker]
-                    if historical_cutoff <= p['timestamp'] < recent_cutoff
+                    p
+                    for p in self.performance_history[ticker]
+                    if historical_cutoff <= p["timestamp"] < recent_cutoff
                 ]
 
                 if len(recent_predictions) >= 5 and len(historical_predictions) >= 20:
-                    recent_accuracy = sum(1 for p in recent_predictions if p['correct']) / len(recent_predictions)
-                    historical_accuracy = (
-                        sum(1 for p in historical_predictions if p['correct']) / len(historical_predictions)
-                    )
+                    recent_accuracy = sum(
+                        1 for p in recent_predictions if p["correct"]
+                    ) / len(recent_predictions)
+                    historical_accuracy = sum(
+                        1 for p in historical_predictions if p["correct"]
+                    ) / len(historical_predictions)
 
                     drift = historical_accuracy - recent_accuracy
 
                     if drift > 0.15:  # 15% performance drop
-                        self.logger.warning(f"Model drift detected for {ticker}: {drift:.3f}")
+                        self.logger.warning(
+                            f"Model drift detected for {ticker}: {drift:.3f}"
+                        )
                         self._schedule_retraining(
                             ticker=ticker,
-                            priority='high',
-                            reason=f"Model drift detected: {drift:.3f}"
+                            priority="high",
+                            reason=f"Model drift detected: {drift:.3f}",
                         )
 
             except Exception as e:
@@ -363,9 +379,7 @@ class ModelRetrainer:
 
         for ticker in config.monitored_tickers:
             self._schedule_retraining(
-                ticker=ticker,
-                priority='low',
-                reason="Weekly scheduled retraining"
+                ticker=ticker, priority="low", reason="Weekly scheduled retraining"
             )
 
     def _schedule_retraining(self, ticker: str, priority: str, reason: str):
@@ -382,12 +396,12 @@ class ModelRetrainer:
 
         # Calculate estimated duration and data requirements
         data_points_required = max(self.min_data_points, 200)
-        estimated_duration = 30 if priority == 'high' else 60  # minutes
+        estimated_duration = 30 if priority == "high" else 60  # minutes
 
         # Schedule based on priority
-        if priority == 'high':
+        if priority == "high":
             scheduled_time = datetime.now() + timedelta(minutes=5)
-        elif priority == 'medium':
+        elif priority == "medium":
             scheduled_time = datetime.now() + timedelta(hours=2)
         else:
             scheduled_time = datetime.now() + timedelta(hours=12)
@@ -398,13 +412,15 @@ class ModelRetrainer:
             priority=priority,
             reason=reason,
             data_points_required=data_points_required,
-            estimated_duration_minutes=estimated_duration
+            estimated_duration_minutes=estimated_duration,
         )
 
         # Insert in priority order
         inserted = False
         for i, existing_job in enumerate(self.retraining_queue):
-            if self._job_priority_value(job.priority) > self._job_priority_value(existing_job.priority):
+            if self._job_priority_value(job.priority) > self._job_priority_value(
+                existing_job.priority
+            ):
                 self.retraining_queue.insert(i, job)
                 inserted = True
                 break
@@ -412,11 +428,13 @@ class ModelRetrainer:
         if not inserted:
             self.retraining_queue.append(job)
 
-        self.logger.info(f"Scheduled retraining for {ticker}: {reason} (priority: {priority})")
+        self.logger.info(
+            f"Scheduled retraining for {ticker}: {reason} (priority: {priority})"
+        )
 
     def _job_priority_value(self, priority: str) -> int:
         """Convert priority string to numeric value"""
-        return {'high': 3, 'medium': 2, 'low': 1}.get(priority, 1)
+        return {"high": 3, "medium": 2, "low": 1}.get(priority, 1)
 
     def _execute_retraining_job(self, job: RetrainingJob):
         """Execute a retraining job"""
@@ -427,7 +445,9 @@ class ModelRetrainer:
             self.active_jobs[ticker] = job
 
             # Collect training data
-            training_data = self._collect_training_data(ticker, job.data_points_required)
+            training_data = self._collect_training_data(
+                ticker, job.data_points_required
+            )
 
             if not training_data or len(training_data) < self.min_data_points:
                 self.logger.warning(
@@ -452,13 +472,14 @@ class ModelRetrainer:
             if ticker in self.active_jobs:
                 del self.active_jobs[ticker]
 
-    def _collect_training_data(self, ticker: str, required_points: int) -> Optional[List]:
+    def _collect_training_data(
+        self, ticker: str, required_points: int
+    ) -> Optional[List]:
         """Collect training data for retraining"""
         try:
             # Fetch historical data (last 30 days)
             all_data = ingestion_manager.fetch_all_data(
-                tickers=[ticker],
-                hours_back=24 * 30  # 30 days
+                tickers=[ticker], hours_back=24 * 30  # 30 days
             )
 
             if not all_data:
@@ -473,21 +494,29 @@ class ModelRetrainer:
                     # Analyze sentiment
                     sentiment_result = self.sentiment_analyzer.analyze_sentiment(
                         data_point.content,
-                        context={"source": data_point.source, "ticker":
-    data_point.ticker}
+                        context={
+                            "source": data_point.source,
+                            "ticker": data_point.ticker,
+                        },
                     )
 
-                    processed_data.append({
-                        'timestamp': data_point.timestamp,
-                        'content': data_point.content,
-                        'sentiment': sentiment_result.sentiment,
-                        'confidence': sentiment_result.confidence,
-                        'ensemble_score': sentiment_result.ensemble_score,
-                        'ticker': data_point.ticker,
-                        'source': data_point.source
-                    })
+                    processed_data.append(
+                        {
+                            "timestamp": data_point.timestamp,
+                            "content": data_point.content,
+                            "sentiment": sentiment_result.sentiment,
+                            "confidence": sentiment_result.confidence,
+                            "ensemble_score": sentiment_result.ensemble_score,
+                            "ticker": data_point.ticker,
+                            "source": data_point.source,
+                        }
+                    )
 
-            return processed_data[-required_points:] if len(processed_data) >= required_points else processed_data
+            return (
+                processed_data[-required_points:]
+                if len(processed_data) >= required_points
+                else processed_data
+            )
 
         except Exception as e:
             self.logger.error(f"Error collecting training data for {ticker}: {str(e)}")
@@ -499,7 +528,9 @@ class ModelRetrainer:
             # This would involve retraining the LSTM fusion model
             # For now, we'll simulate the retraining process
 
-            self.logger.info(f"Retraining model for {ticker} with {len(training_data)} data points")
+            self.logger.info(
+                f"Retraining model for {ticker} with {len(training_data)} data points"
+            )
 
             # Simulate training time
             time.sleep(2)
@@ -529,8 +560,7 @@ class ModelRetrainer:
                     "priority": job.priority,
                     "reason": job.reason,
                     "scheduled_time": job.scheduled_time.isoformat(),
-                    "estimated_duration_minutes":
-    job.estimated_duration_minutes
+                    "estimated_duration_minutes": job.estimated_duration_minutes,
                 }
                 for job in self.retraining_queue[:10]  # Show first 10
             ],
@@ -538,28 +568,28 @@ class ModelRetrainer:
                 {
                     "ticker": ticker,
                     "reason": job.reason,
-                    "started_time": datetime.now().isoformat()  # Simplified
+                    "started_time": datetime.now().isoformat(),  # Simplified
                 }
                 for ticker, job in self.active_jobs.items()
             ],
             "performance_summary": {
                 ticker: {
                     "total_predictions": len(history),
-                    "recent_accuracy": sum(1 for p in history[-50:] if
-    p['correct']) / min(50, len(history)) if history else 0
+                    "recent_accuracy": (
+                        sum(1 for p in history[-50:] if p["correct"])
+                        / min(50, len(history))
+                        if history
+                        else 0
+                    ),
                 }
                 for ticker, history in self.performance_history.items()
-            }
+            },
         }
 
     def force_retrain(self, ticker: str, reason: str = "Manual trigger") -> bool:
         """Force immediate retraining for a ticker"""
         try:
-            self._schedule_retraining(
-                ticker=ticker,
-                priority='high',
-                reason=reason
-            )
+            self._schedule_retraining(ticker=ticker, priority="high", reason=reason)
             return True
         except Exception as e:
             self.logger.error(f"Error forcing retrain for {ticker}: {str(e)}")

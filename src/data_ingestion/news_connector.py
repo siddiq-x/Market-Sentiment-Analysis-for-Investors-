@@ -1,11 +1,11 @@
 """
 News API connector for financial news ingestion
 """
+
 import requests
 from typing import Dict, List, Any, Optional
 from datetime import datetime, timedelta
 import time
-from urllib.parse import urlencode
 
 from src.data_ingestion.base_connector import BaseConnector, DataPoint
 from config.config import config
@@ -28,15 +28,15 @@ class NewsConnector(BaseConnector):
                 params={
                     "apiKey": self.config["api_key"],
                     "category": "business",
-                    "pageSize": 1
+                    "pageSize": 1,
                 },
                 headers={
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-                    'Accept': 'application/json',
-                    'Accept-Language': 'en-US,en;q=0.9'
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+                    "Accept": "application/json",
+                    "Accept-Language": "en-US,en;q=0.9",
                 },
                 timeout=10,
-                verify=False  # Disable SSL verification for corporate networks
+                verify=False,  # Disable SSL verification for corporate networks
             )
 
             if response.status_code == 200:
@@ -91,7 +91,7 @@ class NewsConnector(BaseConnector):
                 "language": "en",
                 "sortBy": "publishedAt",
                 "pageSize": 20,
-                "from": (datetime.now() - timedelta(hours=hours_back)).isoformat()
+                "from": (datetime.now() - timedelta(hours=hours_back)).isoformat(),
             }
 
             if sources:
@@ -102,12 +102,12 @@ class NewsConnector(BaseConnector):
                     f"{self.base_url}/everything",
                     params=params,
                     headers={
-                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-                        'Accept': 'application/json',
-                        'Accept-Language': 'en-US,en;q=0.9'
+                        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+                        "Accept": "application/json",
+                        "Accept-Language": "en-US,en;q=0.9",
                     },
                     timeout=15,
-                    verify=False  # Disable SSL verification for corporate networks
+                    verify=False,  # Disable SSL verification for corporate networks
                 )
 
                 if response.status_code == 200:
@@ -115,7 +115,9 @@ class NewsConnector(BaseConnector):
                     for article in data.get("articles", []):
                         articles.append(self._convert_to_datapoint(article, query))
                 else:
-                    self.logger.warning(f"NewsAPI request failed: {response.status_code}")
+                    self.logger.warning(
+                        f"NewsAPI request failed: {response.status_code}"
+                    )
 
             except Exception as e:
                 self.logger.error(f"Error fetching news for query '{query}': {str(e)}")
@@ -136,7 +138,7 @@ class NewsConnector(BaseConnector):
         source_info = {
             "domain": article.get("source", {}).get("name", "").lower(),
             "author": article.get("author", ""),
-            "url": article.get("url", "")
+            "url": article.get("url", ""),
         }
         credibility = self.get_credibility_score(source_info)
 
@@ -144,7 +146,9 @@ class NewsConnector(BaseConnector):
         content = f"{article.get('title', '')} {article.get('description', '')}"
         return DataPoint(
             source="NewsAPI",
-            timestamp=datetime.fromisoformat(article["publishedAt"].replace("Z", "+00:00")),
+            timestamp=datetime.fromisoformat(
+                article["publishedAt"].replace("Z", "+00:00")
+            ),
             content=content.strip(),
             ticker=ticker,
             credibility_score=credibility,
@@ -155,8 +159,8 @@ class NewsConnector(BaseConnector):
                 "author": article.get("author", ""),
                 "source_name": article.get("source", {}).get("name", ""),
                 "query": query,
-                "url_to_image": article.get("urlToImage", "")
-            }
+                "url_to_image": article.get("urlToImage", ""),
+            },
         )
 
     def fetch_data(self, **kwargs) -> List[DataPoint]:
