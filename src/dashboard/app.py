@@ -13,10 +13,10 @@ import plotly.graph_objs as go
 import plotly.utils
 import numpy as np
 
-from ..pipeline.stream_processor import StreamProcessor
-from ..data_ingestion.ingestion_manager import ingestion_manager
-from ..sentiment.ensemble_analyzer import EnsembleSentimentAnalyzer
-from ..fusion.fusion_manager import FusionManager
+from src.pipeline.stream_processor import StreamProcessor
+from src.data_ingestion.ingestion_manager import ingestion_manager
+from src.sentiment.ensemble_analyzer import EnsembleSentimentAnalyzer
+from src.fusion.fusion_manager import FusionManager
 from config.config import config
 
 # Initialize Flask app
@@ -306,11 +306,9 @@ def start_stream():
         if not dashboard_state["stream_processor_running"]:
             stream_processor.start()
             dashboard_state["stream_processor_running"] = True
-            return jsonify({"status": "started", "message": "Stream processor
-    started successfully"})
+            return jsonify({"status": "started", "message": "Stream processor started successfully"})
         else:
-            return jsonify({"status": "already_running", "message": "Stream
-    processor is already running"})
+            return jsonify({"status": "already_running", "message": "Stream processor is already running"})
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
@@ -321,11 +319,9 @@ def stop_stream():
         if dashboard_state["stream_processor_running"]:
             stream_processor.stop()
             dashboard_state["stream_processor_running"] = False
-            return jsonify({"status": "stopped", "message": "Stream processor
-    stopped successfully"})
+            return jsonify({"status": "stopped", "message": "Stream processor stopped successfully"})
         else:
-            return jsonify({"status": "not_running", "message": "Stream
-    processor is not running"})
+            return jsonify({"status": "not_running", "message": "Stream processor is not running"})
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
@@ -341,9 +337,11 @@ def get_processing_results():
                 "message_id": result.message_id,
                 "source": result.original_data.source,
                 "ticker": result.original_data.ticker,
-                "content_preview": result.original_data.content[:100] + "..."
-    if len(result.original_data.content) > 100 else
-    result.original_data.content,
+                "content_preview": (
+                    result.original_data.content[:100] + "..."
+                    if len(result.original_data.content) > 100
+                    else result.original_data.content
+                ),
                 "sentiment": result.sentiment_result.get("sentiment") if
     result.sentiment_result else None,
                 "confidence": result.sentiment_result.get("confidence") if
@@ -399,15 +397,15 @@ def get_explainability_data(ticker):
             })
             cumulative += contribution
 
+        sentiment_label = ['bearish', 'neutral', 'bullish'][prediction['prediction'] + 1]
         return jsonify({
             "ticker": ticker,
             "prediction": prediction,
             "base_value": base_value,
             "final_value": cumulative,
             "feature_contributions": feature_contributions,
-            "explanation": f"The model predicts {['bearish', 'neutral',
-    'bullish'][prediction['prediction'] + 1]} sentiment for {ticker} based on
-    the feature contributions shown above." })
+            "explanation": f"The model predicts {sentiment_label} sentiment for {ticker} based on the feature contributions shown above."
+        })
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -416,8 +414,7 @@ def get_explainability_data(ticker):
 @socketio.on('connect')
 def handle_connect():
     """Handle client connection"""
-    emit('status', {'message': 'Connected to Market Sentiment Analysis
-    Dashboard'})
+    emit('status', {'message': 'Connected to Market Sentiment Analysis Dashboard'})
 
 @socketio.on('subscribe_ticker')
 def handle_subscribe_ticker(data):
@@ -427,8 +424,7 @@ def handle_subscribe_ticker(data):
         # Join ticker-specific room
         from flask_socketio import join_room
         join_room(f"ticker_{ticker}")
-        emit('subscribed', {'ticker': ticker, 'message': f'Subscribed to
-    {ticker} updates'})
+        emit('subscribed', {'ticker': ticker, 'message': f'Subscribed to {ticker} updates'})
 
 # Background task for real-time updates (would be implemented with proper task queue)
 def background_updates():

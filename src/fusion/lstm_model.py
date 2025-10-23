@@ -13,7 +13,7 @@ from datetime import datetime
 import os
 import json
 
-from .feature_engineer import FeatureSet
+from src.fusion.feature_engineer import FeatureSet
 
 
 @dataclass
@@ -196,8 +196,9 @@ class MultimodalFusionEngine:
         trainable_params = sum(p.numel() for p in self.model.parameters() if
     p.requires_grad)
 
-        self.logger.info(f"Model built - Total params: {total_params:,},
-    Trainable: {trainable_params:,}")
+        self.logger.info(
+            f"Model built - Total params: {total_params:,}, Trainable: {trainable_params:,}"
+        )
 
     def train(self, feature_set: FeatureSet) -> Dict[str, Any]:
         """Train the model on feature set"""
@@ -258,11 +259,10 @@ class MultimodalFusionEngine:
             if epoch % 10 == 0:
                 self.logger.info(
                     f"Epoch {epoch}: Train Loss: {train_loss:.4f}, "
-                    f"Val Loss: {val_loss:.4f}, Train Acc: {train_acc:.4f},
-    Val Acc: {val_acc:.4f}" )
+                    f"Val Loss: {val_loss:.4f}, Train Acc: {train_acc:.4f}, Val Acc: {val_acc:.4f}"
+                )
 
-            if patience_counter >= self.training_config.early_stopping_patience
-    :
+            if patience_counter >= self.training_config.early_stopping_patience:
                 self.logger.info(f"Early stopping at epoch {epoch}")
                 break
 
@@ -278,8 +278,7 @@ class MultimodalFusionEngine:
             "training_history": self.training_history
         }
 
-    def _prepare_data_loaders(self, feature_set: FeatureSet) ->
-    Tuple[DataLoader, DataLoader]:
+    def _prepare_data_loaders(self, feature_set: FeatureSet) -> Tuple[DataLoader, DataLoader]:
         """Prepare training and validation data loaders"""
         # Create dataset
         dataset = FinancialDataset(feature_set.features, feature_set.target)
@@ -310,8 +309,7 @@ class MultimodalFusionEngine:
 
         return train_loader, val_loader
 
-    def _train_epoch(self, train_loader: DataLoader, criterion, optimizer) ->
-    Tuple[float, float]:
+    def _train_epoch(self, train_loader: DataLoader, criterion, optimizer) -> Tuple[float, float]:
         """Train for one epoch"""
         self.model.train()
         total_loss = 0.0
@@ -342,8 +340,7 @@ class MultimodalFusionEngine:
 
         return avg_loss, accuracy
 
-    def _validate_epoch(self, val_loader: DataLoader, criterion) ->
-    Tuple[float, float]:
+    def _validate_epoch(self, val_loader: DataLoader, criterion) -> Tuple[float, float]:
         """Validate for one epoch"""
         self.model.eval()
         total_loss = 0.0
@@ -446,8 +443,7 @@ class MultimodalFusionEngine:
 
             # Restore configs
             self.model_config = ModelConfig(**checkpoint['model_config'])
-            self.training_config = TrainingConfig(**checkpoint['training_config
-    '])
+            self.training_config = TrainingConfig(**checkpoint['training_config'])
 
             # Build and load model
             self.build_model(self.model_config.input_size)

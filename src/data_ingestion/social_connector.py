@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 import time
 import re
 
-from .base_connector import BaseConnector, DataPoint
+from src.data_ingestion.base_connector import BaseConnector, DataPoint
 from config.config import config
 
 
@@ -16,8 +16,7 @@ class SocialConnector(BaseConnector):
     """Connector for Twitter/X financial discussions"""
 
     def __init__(self):
-        super().__init__("Twitter", {"bearer_token":
-    config.api.twitter_bearer_token})
+        super().__init__("Twitter", {"bearer_token": config.api.twitter_bearer_token})
         self.client = None
         self.rate_limit_delay = 1  # seconds between requests
         self.last_request_time = 0
@@ -99,8 +98,7 @@ class SocialConnector(BaseConnector):
             if not self.connect():
                 return []
 
-        tickers = tickers or config.monitored_tickers[:10]  # Limit for API
-    quota
+        tickers = tickers or config.monitored_tickers[:10]  # Limit for API quota
         tweets_data = []
 
         # Create search queries
@@ -108,8 +106,10 @@ class SocialConnector(BaseConnector):
 
         # Ticker-specific queries
         for ticker in tickers[:5]:  # Limit to avoid API quota
-            query = f"${ticker} OR {ticker} (stock OR price OR earnings OR buy
-    OR sell) -is:retweet lang:en" queries.append((query, ticker))
+            query = (
+                f"${ticker} OR {ticker} (stock OR price OR earnings OR buy OR sell) -is:retweet lang:en"
+            )
+            queries.append((query, ticker))
 
         # General financial queries
         general_queries = [
@@ -128,19 +128,20 @@ class SocialConnector(BaseConnector):
                 tweets = self.client.search_recent_tweets(
                     query=query,
                     max_results=min(max_tweets // len(queries), 100),
-                    tweet_fields=['created_at', 'author_id', 'public_metrics',
-    'context_annotations'],
+                    tweet_fields=['created_at', 'author_id', 'public_metrics', 'context_annotations'],
                     start_time=datetime.now() - timedelta(hours=hours_back)
                 )
 
                 if tweets.data:
                     for tweet in tweets.data:
-                        tweets_data.append(self._convert_to_datapoint(tweet,
-    associated_ticker))
+                        tweets_data.append(
+                            self._convert_to_datapoint(tweet, associated_ticker)
+                        )
 
             except Exception as e:
-                self.logger.error(f"Error fetching tweets for query '{query}':
-    {str(e)}")
+                self.logger.error(
+                    f"Error fetching tweets for query '{query}': {str(e)}"
+                )
 
         self.logger.info(f"Fetched {len(tweets_data)} tweets")
         return tweets_data
@@ -153,8 +154,7 @@ class SocialConnector(BaseConnector):
         primary_ticker = associated_ticker or (tickers[0] if tickers else None)
 
         # Calculate credibility based on engagement and account metrics
-        engagement_score = self._calculate_engagement_score(tweet.public_metric
-    s)
+        engagement_score = self._calculate_engagement_score(tweet.public_metrics)
         base_credibility = 0.60  # Base credibility for social media
 
         # Adjust credibility based on engagement (higher engagement = higher credibility)
@@ -212,8 +212,7 @@ class RedditConnector(BaseConnector):
                 self.logger.info("Successfully connected to Reddit")
                 return True
             else:
-                self.logger.error(f"Reddit connection failed:
-    {response.status_code}")
+                self.logger.error(f"Reddit connection failed: {response.status_code}")
                 return False
 
         except Exception as e:
@@ -256,12 +255,10 @@ class RedditConnector(BaseConnector):
 
                     for post in data.get('data', {}).get('children', []):
                         post_data = post.get('data', {})
-                        posts_data.append(self._convert_reddit_to_datapoint(pos
-    t_data, subreddit))
+                        posts_data.append(self._convert_reddit_to_datapoint(post_data, subreddit))
 
             except Exception as e:
-                self.logger.error(f"Error fetching from r/{subreddit}:
-    {str(e)}")
+                self.logger.error(f"Error fetching from r/{subreddit}: {str(e)}")
 
         self.logger.info(f"Fetched {len(posts_data)} Reddit posts")
         return posts_data

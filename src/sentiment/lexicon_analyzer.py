@@ -35,30 +35,25 @@ class FinancialLexiconAnalyzer:
             'outperform', 'beat', 'exceed', 'strong', 'robust', 'solid',
 
             # Financial performance
-            'profit', 'gain', 'growth', 'increase', 'rise', 'improve',
-    'expand',
+            'profit', 'gain', 'growth', 'increase', 'rise', 'improve', 'expand',
             'revenue', 'earnings', 'dividend', 'buyback', 'acquisition',
 
             # Analyst terms
-            'upgrade', 'buy', 'overweight', 'outperform', 'positive',
-    'bullish',
+            'upgrade', 'buy', 'overweight', 'outperform', 'positive', 'bullish',
             'recommend', 'target', 'upside', 'opportunity',
 
             # General positive
-            'excellent', 'outstanding', 'impressive', 'successful',
-    'promising',
+            'excellent', 'outstanding', 'impressive', 'successful', 'promising',
             'confident', 'optimistic', 'favorable', 'attractive'
         }
 
         self.negative_words = {
             # Market movements
-            'crash', 'plunge', 'collapse', 'decline', 'fall', 'drop',
-    'bearish',
+            'crash', 'plunge', 'collapse', 'decline', 'fall', 'drop', 'bearish',
             'downtrend', 'correction', 'selloff', 'underperform', 'miss',
 
             # Financial performance
-            'loss', 'deficit', 'decrease', 'shrink', 'contract', 'weak',
-    'poor',
+            'loss', 'deficit', 'decrease', 'shrink', 'contract', 'weak', 'poor',
             'disappointing', 'concern', 'risk', 'debt', 'bankruptcy',
 
             # Analyst terms
@@ -93,7 +88,7 @@ class FinancialLexiconAnalyzer:
             'not', 'no', 'never', 'none', 'nothing', 'nowhere', 'neither',
             'nobody', 'cannot', 'cant', 'wont', 'wouldnt', 'shouldnt',
             'couldnt', 'doesnt', 'dont', 'didnt', 'isnt', 'arent', 'wasnt',
-    'werent'
+            'werent'
         }
 
         # Load additional lexicons if available
@@ -101,8 +96,9 @@ class FinancialLexiconAnalyzer:
 
     def _load_additional_lexicons(self):
         """Load additional sentiment lexicons from files"""
-        lexicon_dir = os.path.join(os.path.dirname(__file__), '..', '..',
-    'data', 'lexicons')
+        lexicon_dir = os.path.join(
+            os.path.dirname(__file__), '..', '..', 'data', 'lexicons'
+        )
 
         # Try to load custom financial lexicons
         try:
@@ -114,18 +110,15 @@ class FinancialLexiconAnalyzer:
                             lexicon_data = json.load(f)
 
                         if 'positive' in lexicon_data:
-                            self.positive_words.update(lexicon_data['positive']
-    )
+                            self.positive_words.update(lexicon_data['positive'])
                         if 'negative' in lexicon_data:
-                            self.negative_words.update(lexicon_data['negative']
-    )
+                            self.negative_words.update(lexicon_data['negative'])
                         if 'neutral' in lexicon_data:
                             self.neutral_words.update(lexicon_data['neutral'])
 
                         self.logger.info(f"Loaded lexicon from {filename}")
         except Exception as e:
-            self.logger.warning(f"Could not load additional lexicons:
-    {str(e)}")
+            self.logger.warning(f"Could not load additional lexicons: {str(e)}")
 
     def analyze_sentiment(self, text: str, context: Optional[Dict[str, Any]] =
     None) -> LexiconSentimentResult:
@@ -162,12 +155,9 @@ class FinancialLexiconAnalyzer:
         # Create metadata
         metadata = {
             "word_count": len(words),
-            "positive_words": len([w for w in matched_words if w in
-    self.positive_words]),
-            "negative_words": len([w for w in matched_words if w in
-    self.negative_words]),
-            "neutral_words": len([w for w in matched_words if w in
-    self.neutral_words]),
+            "positive_words": len([w for w in matched_words if w in self.positive_words]),
+            "negative_words": len([w for w in matched_words if w in self.negative_words]),
+            "neutral_words": len([w for w in matched_words if w in self.neutral_words]),
             "context": context or {}
         }
 
@@ -194,8 +184,7 @@ class FinancialLexiconAnalyzer:
 
         return words
 
-    def _calculate_word_scores(self, words: List[str]) -> Tuple[Dict[str,
-    float], List[str]]:
+    def _calculate_word_scores(self, words: List[str]) -> Tuple[Dict[str, float], List[str]]:
         """Calculate sentiment scores for individual words"""
         word_scores = {}
         matched_words = []
@@ -218,8 +207,7 @@ class FinancialLexiconAnalyzer:
 
         return word_scores, matched_words
 
-    def _apply_modifiers(self, words: List[str], word_scores: Dict[str,
-    float]) -> Dict[str, float]:
+    def _apply_modifiers(self, words: List[str], word_scores: Dict[str, float]) -> Dict[str, float]:
         """Apply intensity modifiers and negation"""
         adjusted_scores = word_scores.copy()
 
@@ -232,12 +220,10 @@ class FinancialLexiconAnalyzer:
                     prev_word = words[j]
 
                     if prev_word in self.intensifiers:
-                        adjusted_scores[word] = current_score *
-    self.intensifiers[prev_word]
+                        adjusted_scores[word] = current_score * self.intensifiers[prev_word]
                         break
                     elif prev_word in self.diminishers:
-                        adjusted_scores[word] = current_score *
-    self.diminishers[prev_word]
+                        adjusted_scores[word] = current_score * self.diminishers[prev_word]
                         break
 
                 # Check for negation in previous 3 words
@@ -247,22 +233,18 @@ class FinancialLexiconAnalyzer:
                         break
 
                 # Ensure scores stay within bounds
-                adjusted_scores[word] = max(-2.0, min(2.0,
-    adjusted_scores[word]))
+                adjusted_scores[word] = max(-2.0, min(2.0, adjusted_scores[word]))
 
         return adjusted_scores
 
-    def _determine_sentiment(self, word_scores: Dict[str, float]) ->
-    Tuple[str, float]:
+    def _determine_sentiment(self, word_scores: Dict[str, float]) -> Tuple[str, float]:
         """Determine overall sentiment from word scores"""
         if not word_scores:
             return "neutral", 0.0
 
         # Calculate aggregate scores
-        positive_score = sum(score for score in word_scores.values() if score
-    > 0)
-        negative_score = abs(sum(score for score in word_scores.values() if
-    score < 0))
+        positive_score = sum(score for score in word_scores.values() if score > 0)
+        negative_score = abs(sum(score for score in word_scores.values() if score < 0))
         total_words = len(word_scores)
 
         # Calculate net sentiment
@@ -287,10 +269,9 @@ class FinancialLexiconAnalyzer:
 
         return sentiment, confidence
 
-    def batch_analyze(self,
-                     texts: List[str],
-                     contexts: Optional[List[Dict[str, Any]]] = None) ->
-    List[LexiconSentimentResult]:
+    def batch_analyze(
+        self, texts: List[str], contexts: Optional[List[Dict[str, Any]]] = None
+    ) -> List[LexiconSentimentResult]:
         """Analyze sentiment for multiple texts"""
         results = []
         contexts = contexts or [None] * len(texts)
@@ -378,6 +359,5 @@ class FinancialLexiconAnalyzer:
             "intensifiers": len(self.intensifiers),
             "diminishers": len(self.diminishers),
             "negation_words": len(self.negation_words),
-            "total_sentiment_words": len(self.positive_words) +
-    len(self.negative_words) + len(self.neutral_words)
+            "total_sentiment_words": len(self.positive_words) + len(self.negative_words) + len(self.neutral_words)
         }

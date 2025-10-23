@@ -8,10 +8,10 @@ import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import json
 
-from .base_connector import BaseConnector, DataPoint
-from .news_connector import NewsConnector
-from .market_connector import MarketConnector
-from .social_connector import SocialConnector, RedditConnector
+from src.data_ingestion.base_connector import BaseConnector, DataPoint
+from src.data_ingestion.news_connector import NewsConnector
+from src.data_ingestion.market_connector import MarketConnector
+from src.data_ingestion.social_connector import SocialConnector, RedditConnector
 from config.config import config
 
 
@@ -44,8 +44,7 @@ class IngestionManager:
             try:
                 status = connector.connect()
                 connection_status[name] = status
-                self.logger.info(f"Connector {name}: {'Connected' if status
-    else 'Failed'}")
+                self.logger.info(f"Connector {name}: {'Connected' if status else 'Failed'}")
             except Exception as e:
                 connection_status[name] = False
                 self.logger.error(f"Error connecting {name}: {str(e)}")
@@ -77,8 +76,7 @@ class IngestionManager:
             future_to_connector = {
                 executor.submit(task): name
                 for name, task in fetch_tasks
-                if name in self.connectors and
-    self.connectors[name].is_healthy()
+                if name in self.connectors and self.connectors[name].is_healthy()
             }
 
             for future in as_completed(future_to_connector):
@@ -86,11 +84,9 @@ class IngestionManager:
                 try:
                     data = future.result(timeout=60)  # 60 second timeout
                     all_data.extend(data)
-                    self.logger.info(f"Fetched {len(data)} items from
-    {connector_name}")
+                    self.logger.info(f"Fetched {len(data)} items from {connector_name}")
                 except Exception as e:
-                    self.logger.error(f"Error fetching from {connector_name}:
-    {str(e)}")
+                    self.logger.error(f"Error fetching from {connector_name}: {str(e)}")
 
         # Sort by timestamp (newest first)
         all_data.sort(key=lambda x: x.timestamp, reverse=True)
@@ -98,8 +94,7 @@ class IngestionManager:
         self.logger.info(f"Total data points collected: {len(all_data)}")
         return all_data
 
-    def fetch_by_connector(self, connector_name: str, **kwargs) ->
-    List[DataPoint]:
+    def fetch_by_connector(self, connector_name: str, **kwargs) -> List[DataPoint]:
         """Fetch data from a specific connector"""
         if connector_name not in self.connectors:
             raise ValueError(f"Connector {connector_name} not found")

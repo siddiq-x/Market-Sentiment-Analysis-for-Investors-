@@ -66,8 +66,7 @@ class TextCleaner:
             'pb': 'price to book',
             'roe': 'return on equity',
             'roa': 'return on assets',
-            'ebitda': 'earnings before interest taxes depreciation
-    amortization',
+            'ebitda': 'earnings before interest taxes depreciation amortization',
             'yoy': 'year over year',
             'qoq': 'quarter over quarter',
             'atm': 'at the money',
@@ -82,12 +81,11 @@ class TextCleaner:
         """Compile commonly used regex patterns"""
         # URLs
         self.url_pattern = re.compile(
-            r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F
-    ][0-9a-fA-F]))+' )
+            r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+'
+        )
 
         # Email addresses
-        self.email_pattern = re.compile(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[
-    A-Z|a-z]{2,}\b')
+        self.email_pattern = re.compile(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b')
 
         # Stock tickers ($AAPL, AAPL)
         self.ticker_pattern = re.compile(r'\$?([A-Z]{1,5})\b')
@@ -141,8 +139,7 @@ class TextCleaner:
         # Step 1: Extract important entities before cleaning
         tickers = self._extract_tickers(text) if preserve_tickers else []
         currencies = self._extract_currencies(text) if preserve_numbers else []
-        percentages = self._extract_percentages(text) if preserve_numbers else
-    []
+        percentages = self._extract_percentages(text) if preserve_numbers else []
 
         # Step 2: Remove HTML tags
         text = self.html_pattern.sub(' ', text)
@@ -175,8 +172,7 @@ class TextCleaner:
             for i, ticker in enumerate(tickers):
                 placeholder = f"TICKER{i}PLACEHOLDER"
                 ticker_placeholders[placeholder] = ticker
-                text = re.sub(rf'\b{re.escape(ticker)}\b', placeholder, text,
-    flags=re.IGNORECASE)
+                text = re.sub(rf'\b{re.escape(ticker)}\b', placeholder, text, flags=re.IGNORECASE)
 
         text = text.lower()
 
@@ -240,8 +236,7 @@ class TextCleaner:
     'ALL', 'CAN', 'HER', 'WAS', 'ONE', 'OUR', 'HAD', 'BY', 'UP', 'DO', 'NO',
     'IF', 'MY', 'ON', 'AS', 'WE', 'HE', 'BE', 'TO', 'OF', 'IT', 'IS', 'IN',
     'AT', 'OR'}
-        return [ticker for ticker in matches if ticker not in false_positives
-    and len(ticker) <= 5]
+        return [ticker for ticker in matches if ticker not in false_positives and len(ticker) <= 5]
 
     def _extract_currencies(self, text: str) -> List[str]:
         """Extract currency amounts from text"""
@@ -276,8 +271,7 @@ class TextCleaner:
                 # Convert POS tag to WordNet format
                 wordnet_pos = self._get_wordnet_pos(pos)
                 if wordnet_pos:
-                    lemmatized.append(self.lemmatizer.lemmatize(token,
-    wordnet_pos))
+                    lemmatized.append(self.lemmatizer.lemmatize(token, wordnet_pos))
                 else:
                     lemmatized.append(self.lemmatizer.lemmatize(token))
 
@@ -303,18 +297,14 @@ class TextCleaner:
         """Clean multiple texts in batch"""
         return [self.clean_text(text, **kwargs) for text in texts]
 
-    def get_cleaning_stats(self, cleaned_texts: List[CleanedText]) ->
-    Dict[str, Any]:
+    def get_cleaning_stats(self, cleaned_texts: List[CleanedText]) -> Dict[str, Any]:
         """Get statistics about cleaning process"""
         if not cleaned_texts:
             return {}
 
-        total_original = sum(ct.metadata.get("original_length", 0) for ct in
-    cleaned_texts)
-        total_cleaned = sum(ct.metadata.get("cleaned_length", 0) for ct in
-    cleaned_texts)
-        total_tokens = sum(ct.metadata.get("token_count", 0) for ct in
-    cleaned_texts)
+        total_original = sum(ct.metadata.get("original_length", 0) for ct in cleaned_texts)
+        total_cleaned = sum(ct.metadata.get("cleaned_length", 0) for ct in cleaned_texts)
+        total_tokens = sum(ct.metadata.get("token_count", 0) for ct in cleaned_texts)
         total_sentences = sum(ct.metadata.get("sentence_count", 0) for ct in
     cleaned_texts)
 
@@ -326,8 +316,7 @@ class TextCleaner:
             "total_texts": len(cleaned_texts),
             "total_original_chars": total_original,
             "total_cleaned_chars": total_cleaned,
-            "compression_ratio": total_cleaned / total_original if
-    total_original > 0 else 0,
+            "compression_ratio": total_cleaned / total_original if total_original > 0 else 0,
             "total_tokens": total_tokens,
             "total_sentences": total_sentences,
             "avg_tokens_per_text": total_tokens / len(cleaned_texts),

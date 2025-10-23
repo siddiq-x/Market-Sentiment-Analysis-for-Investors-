@@ -8,11 +8,15 @@ import logging
 from datetime import datetime, timedelta
 from dataclasses import dataclass
 
-from .feature_engineer import MultimodalFeatureEngineer, FeatureSet
-from .lstm_model import MultimodalFusionEngine, ModelConfig, TrainingConfig,
-    PredictionResult
-from ..data_ingestion.base_connector import DataPoint
-from ..sentiment.ensemble_analyzer import EnsembleSentimentResult
+from src.fusion.feature_engineer import MultimodalFeatureEngineer, FeatureSet
+from src.fusion.lstm_model import (
+    MultimodalFusionEngine,
+    ModelConfig,
+    TrainingConfig,
+    PredictionResult,
+)
+from src.data_ingestion.base_connector import DataPoint
+from src.sentiment.ensemble_analyzer import EnsembleSentimentResult
 
 
 @dataclass
@@ -63,8 +67,9 @@ class FusionManager:
         # Cached models per ticker
         self.ticker_models = {}
 
-        self.logger.info(f"Initialized fusion manager - lookback:
-    {lookback_window}h, horizon: {prediction_horizon}h")
+        self.logger.info(
+            f"Initialized fusion manager - lookback: {lookback_window}h, horizon: {prediction_horizon}h"
+        )
 
     def prepare_training_data(self,
                             sentiment_results: List[EnsembleSentimentResult],
@@ -79,8 +84,7 @@ class FusionManager:
             target_ticker: Ticker symbol to prepare data for
         """
         # Convert sentiment results to DataFrame
-        sentiment_df = self._sentiment_to_dataframe(sentiment_results,
-    target_ticker)
+        sentiment_df = self._sentiment_to_dataframe(sentiment_results, target_ticker)
 
         # Convert market data to DataFrame
         market_df = self._market_data_to_dataframe(market_data_points)
@@ -90,8 +94,9 @@ class FusionManager:
             sentiment_df, market_df, target_ticker
         )
 
-        self.logger.info(f"Prepared training data for {target_ticker}:
-    {feature_set.metadata}")
+        self.logger.info(
+            f"Prepared training data for {target_ticker}: {feature_set.metadata}"
+        )
 
         return feature_set
 
@@ -100,8 +105,7 @@ class FusionManager:
                    market_data_points: List[DataPoint],
                    target_ticker: str,
                    model_config: Optional[ModelConfig] = None,
-                   training_config: Optional[TrainingConfig] = None) ->
-    Dict[str, Any]:
+                   training_config: Optional[TrainingConfig] = None) -> Dict[str, Any]:
         """
         Train fusion model for a specific ticker
 
@@ -136,8 +140,7 @@ class FusionManager:
 
         self.last_training_time = datetime.now()
 
-        self.logger.info(f"Model trained for {target_ticker}:
-    {training_results}")
+        self.logger.info(f"Model trained for {target_ticker}: {training_results}")
 
         return training_results
 
@@ -210,8 +213,7 @@ class FusionManager:
 
         for ticker in target_tickers:
             try:
-                prediction = self.predict(sentiment_results,
-    market_data_points, ticker)
+                prediction = self.predict(sentiment_results, market_data_points, ticker)
                 predictions[ticker] = prediction
             except Exception as e:
                 self.logger.error(f"Error predicting for {ticker}: {str(e)}")
@@ -219,10 +221,11 @@ class FusionManager:
 
         return predictions
 
-    def _sentiment_to_dataframe(self,
-                               sentiment_results:
-    List[EnsembleSentimentResult],
-                               target_ticker: str) -> pd.DataFrame:
+    def _sentiment_to_dataframe(
+        self,
+        sentiment_results: List[EnsembleSentimentResult],
+        target_ticker: str,
+    ) -> pd.DataFrame:
         """Convert sentiment results to DataFrame"""
         data = []
 
@@ -243,8 +246,9 @@ class FusionManager:
                     sentiment_score = 0.0
 
                 # Extract individual scores
-                finbert_scores = result.finbert_result.scores if
-    result.finbert_result else {}
+                finbert_scores = (
+                    result.finbert_result.scores if result.finbert_result else {}
+                )
 
                 data.append({
                     'timestamp': result.timestamp,
@@ -259,24 +263,31 @@ class FusionManager:
 
         if not data:
             # Return empty DataFrame with required columns
-            return pd.DataFrame(columns=[
-                'timestamp', 'sentiment_score', 'confidence',
-                'positive_score', 'negative_score', 'neutral_score',
-    'credibility_score'
-            ])
+            return pd.DataFrame(
+                columns=[
+                    'timestamp',
+                    'sentiment_score',
+                    'confidence',
+                    'positive_score',
+                    'negative_score',
+                    'neutral_score',
+                    'credibility_score',
+                ]
+            )
 
         df = pd.DataFrame(data)
         df['timestamp'] = pd.to_datetime(df['timestamp'])
         return df.sort_values('timestamp')
 
-    def _market_data_to_dataframe(self, market_data_points: List[DataPoint])
-    -> pd.DataFrame:
+    def _market_data_to_dataframe(self, market_data_points: List[DataPoint]) -> pd.DataFrame:
         """Convert market data points to DataFrame"""
         data = []
 
         for point in market_data_points:
-            if point.source in ['YahooFinance', 'AlphaVantage'] and
-    point.metadata.get('data_type') == 'stock_price':
+            if (
+                point.source in ['YahooFinance', 'AlphaVantage']
+                and point.metadata.get('data_type') == 'stock_price'
+            ):
                 data.append({
                     'timestamp': point.timestamp,
                     'ticker': point.ticker,
@@ -288,53 +299,60 @@ class FusionManager:
                 })
 
         if not data:
-            return pd.DataFrame(columns=['timestamp', 'ticker', 'open',
-    'high', 'low', 'close', 'volume'])
+            return pd.DataFrame(
+                columns=['timestamp', 'ticker', 'open', 'high', 'low', 'close', 'volume']
+            )
 
         df = pd.DataFrame(data)
         df['timestamp'] = pd.to_datetime(df['timestamp'])
         return df.sort_values('timestamp')
 
-    def _analyze_contributing_factors(self,
-                                    sentiment_results:
-    List[EnsembleSentimentResult],
-                                    market_data_points: List[DataPoint],
-                                    feature_set: FeatureSet) -> Dict[str,
-    float]:
+    def _analyze_contributing_factors(
+        self,
+        sentiment_results: List[EnsembleSentimentResult],
+        market_data_points: List[DataPoint],
+        feature_set: FeatureSet,
+    ) -> Dict[str, float]:
         """Analyze factors contributing to the prediction"""
         factors = {}
 
         # Sentiment contribution
-        recent_sentiment = [r for r in sentiment_results[-10:]]  # Last 10
-    sentiment points
+        # Last 10 sentiment points
+        recent_sentiment = [r for r in sentiment_results[-10:]]
         if recent_sentiment:
-            avg_sentiment = np.mean([r.ensemble_score for r in
-    recent_sentiment])
+            avg_sentiment = np.mean([r.ensemble_score for r in recent_sentiment])
             factors['sentiment_trend'] = float(avg_sentiment)
-            factors['sentiment_strength'] = float(np.mean([r.confidence for r
-    in recent_sentiment]))
+            factors['sentiment_strength'] = float(
+                np.mean([r.confidence for r in recent_sentiment])
+            )
 
         # Market momentum contribution
-        recent_market = [p for p in market_data_points[-10:] if
-    p.metadata.get('data_type') == 'stock_price']
+        recent_market = [
+            p for p in market_data_points[-10:] if p.metadata.get('data_type') == 'stock_price'
+        ]
         if len(recent_market) >= 2:
             prices = [p.metadata.get('close', 0) for p in recent_market]
             if prices:
-                momentum = (prices[-1] - prices[0]) / prices[0] if prices[0]
-    != 0 else 0
+                momentum = (prices[-1] - prices[0]) / prices[0] if prices[0] != 0 else 0
                 factors['price_momentum'] = float(momentum)
 
                 # Volatility
-                returns = [(prices[i] - prices[i-1]) / prices[i-1] for i in
-    range(1, len(prices)) if prices[i-1] != 0]
+                returns = [
+                    (prices[i] - prices[i - 1]) / prices[i - 1]
+                    for i in range(1, len(prices))
+                    if prices[i - 1] != 0
+                ]
                 if returns:
                     factors['volatility'] = float(np.std(returns))
 
         # Volume trend
         volumes = [p.metadata.get('volume', 0) for p in recent_market]
         if len(volumes) >= 2:
-            volume_trend = (volumes[-1] - np.mean(volumes[:-1])) /
-    np.mean(volumes[:-1]) if np.mean(volumes[:-1]) != 0 else 0
+            volume_trend = (
+                (volumes[-1] - np.mean(volumes[:-1])) / np.mean(volumes[:-1])
+                if np.mean(volumes[:-1]) != 0
+                else 0
+            )
             factors['volume_trend'] = float(volume_trend)
 
         return factors
@@ -345,8 +363,7 @@ class FusionManager:
             ticker=ticker,
             prediction=0,
             confidence=0.33,
-            probability_distribution={'bearish': 0.33, 'neutral': 0.34,
-    'bullish': 0.33},
+            probability_distribution={'bearish': 0.33, 'neutral': 0.34, 'bullish': 0.33},
             contributing_factors={},
             timestamp=datetime.now(),
             horizon_hours=self.prediction_horizon
@@ -402,8 +419,7 @@ class FusionManager:
 
         return len(tickers_to_remove)
 
-    def export_predictions(self, predictions: Dict[str, FusionPrediction]) ->
-    pd.DataFrame:
+    def export_predictions(self, predictions: Dict[str, FusionPrediction]) -> pd.DataFrame:
         """Export predictions to DataFrame"""
         data = []
 
@@ -411,8 +427,7 @@ class FusionManager:
             data.append({
                 'ticker': prediction.ticker,
                 'prediction': prediction.prediction,
-                'prediction_label': ['bearish', 'neutral',
-    'bullish'][prediction.prediction + 1],
+                'prediction_label': ['bearish', 'neutral', 'bullish'][prediction.prediction + 1],
                 'confidence': prediction.confidence,
                 'prob_bearish': prediction.probability_distribution['bearish'],
                 'prob_neutral': prediction.probability_distribution['neutral'],

@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 import time
 from urllib.parse import urlencode
 
-from .base_connector import BaseConnector, DataPoint
+from src.data_ingestion.base_connector import BaseConnector, DataPoint
 from config.config import config
 
 
@@ -38,8 +38,7 @@ class NewsConnector(BaseConnector):
                 self.logger.info("Successfully connected to NewsAPI")
                 return True
             else:
-                self.logger.error(f"NewsAPI connection failed:
-    {response.status_code}")
+                self.logger.error(f"NewsAPI connection failed: {response.status_code}")
                 return False
 
         except Exception as e:
@@ -54,11 +53,12 @@ class NewsConnector(BaseConnector):
             time.sleep(self.rate_limit_delay - time_since_last)
         self.last_request_time = time.time()
 
-    def fetch_financial_news(self,
-                           tickers: Optional[List[str]] = None,
-                           hours_back: int = 24,
-                           sources: Optional[List[str]] = None) ->
-    List[DataPoint]:
+    def fetch_financial_news(
+        self,
+        tickers: Optional[List[str]] = None,
+        hours_back: int = 24,
+        sources: Optional[List[str]] = None,
+    ) -> List[DataPoint]:
         """Fetch financial news articles"""
         if not self._is_connected:
             if not self.connect():
@@ -71,8 +71,7 @@ class NewsConnector(BaseConnector):
         # Create search queries for each ticker
         queries = []
         for ticker in tickers[:5]:  # Limit to avoid API quota
-            queries.append(f"{ticker} stock OR {ticker} earnings OR {ticker}
-    financial")
+            queries.append(f"{ticker} stock OR {ticker} earnings OR {ticker} financial")
 
         # Add general financial terms
         queries.append("stock market OR financial markets OR earnings OR IPO")
@@ -86,8 +85,7 @@ class NewsConnector(BaseConnector):
                 "language": "en",
                 "sortBy": "publishedAt",
                 "pageSize": 20,
-                "from": (datetime.now() -
-    timedelta(hours=hours_back)).isoformat()
+                "from": (datetime.now() - timedelta(hours=hours_back)).isoformat()
             }
 
             if sources:
@@ -103,21 +101,17 @@ class NewsConnector(BaseConnector):
                 if response.status_code == 200:
                     data = response.json()
                     for article in data.get("articles", []):
-                        articles.append(self._convert_to_datapoint(article,
-    query))
+                        articles.append(self._convert_to_datapoint(article, query))
                 else:
-                    self.logger.warning(f"NewsAPI request failed:
-    {response.status_code}")
+                    self.logger.warning(f"NewsAPI request failed: {response.status_code}")
 
             except Exception as e:
-                self.logger.error(f"Error fetching news for query '{query}':
-    {str(e)}")
+                self.logger.error(f"Error fetching news for query '{query}': {str(e)}")
 
         self.logger.info(f"Fetched {len(articles)} news articles")
         return articles
 
-    def _convert_to_datapoint(self, article: Dict[str, Any], query: str) ->
-    DataPoint:
+    def _convert_to_datapoint(self, article: Dict[str, Any], query: str) -> DataPoint:
         """Convert NewsAPI article to DataPoint"""
         # Extract ticker from query if possible
         ticker = None
@@ -135,11 +129,10 @@ class NewsConnector(BaseConnector):
         credibility = self.get_credibility_score(source_info)
 
         # Combine title and description for content
-        content = f"{article.get('title', '')} {article.get('description',
-    '')}" return DataPoint(
+        content = f"{article.get('title', '')} {article.get('description', '')}"
+        return DataPoint(
             source="NewsAPI",
-            timestamp=datetime.fromisoformat(article["publishedAt"].replace("Z"
-    , "+00:00")),
+            timestamp=datetime.fromisoformat(article["publishedAt"].replace("Z", "+00:00")),
             content=content.strip(),
             ticker=ticker,
             credibility_score=credibility,

@@ -178,10 +178,8 @@ class MarketSentimentSystem:
 
             # Test data connectors
             connection_status = ingestion_manager.connect_all()
-            connected_count = sum(1 for status in connection_status.values()
-    if status)
-            self.logger.info(f"Connected to
-    {connected_count}/{len(connection_status)} data sources")
+            connected_count = sum(1 for status in connection_status.values() if status)
+            self.logger.info(f"Connected to {connected_count}/{len(connection_status)} data sources")
 
         except Exception as e:
             self.logger.error(f"Error initializing components: {str(e)}")
@@ -286,12 +284,10 @@ class MarketSentimentSystem:
                 return
 
             # Analyze sentiment for text data
-            text_data = [dp for dp in all_data if dp.content and
-    dp.content.strip()]
+            text_data = [dp for dp in all_data if dp.content and dp.content.strip()]
 
             if text_data:
-                self.logger.info(f"Analyzing sentiment for {len(text_data)}
-    text items")
+                self.logger.info(f"Analyzing sentiment for {len(text_data)} text items")
 
                 for data_point in text_data[:10]:  # Limit for demo
                     try:
@@ -305,12 +301,11 @@ class MarketSentimentSystem:
 
                         self.logger.info(
                             f"Sentiment for {data_point.ticker or 'General'}: "
-                            f"{result.sentiment} (confidence:
-    {result.confidence:.3f})" )
+                            f"{result.sentiment} (confidence: {result.confidence:.3f})"
+                        )
 
                     except Exception as e:
-                        self.logger.error(f"Error analyzing sentiment:
-    {str(e)}")
+                        self.logger.error(f"Error analyzing sentiment: {str(e)}")
 
             self.logger.info("Batch analysis completed")
 
@@ -343,8 +338,7 @@ class MarketSentimentSystem:
         try:
             # This would normally use historical data
             # For demo, we'll just show the training process
-            self.logger.info("Training demo completed - would train fusion
-    model with historical data")
+            self.logger.info("Training demo completed - would train fusion model with historical data")
 
         except Exception as e:
             self.logger.error(f"Error in training demo: {str(e)}")
@@ -387,7 +381,7 @@ def main():
     Main entry point for the Market Sentiment Analysis System.
 
     This function parses command-line arguments and starts the system in the
-    requested mode (dashboard, batch, stream, or train).
+    requested mode (dashboard, batch, stream, train).
 
     Command-line arguments:
         --mode: Operation mode (dashboard, batch, stream, train)
@@ -411,21 +405,19 @@ def main():
         # Run training demo
         python main.py --mode train --ticker AMZN
     """
-    parser = argparse.ArgumentParser(description="Market Sentiment Analysis
-    System")
-    parser.add_argument("--mode", choices=["dashboard", "batch", "stream",
-    "train"],
-                       default="dashboard", help="Operation mode")
+    parser = argparse.ArgumentParser(description="Market Sentiment Analysis System")
+    parser.add_argument(
+        "--mode",
+        choices=["dashboard", "batch", "stream", "train"],
+        default="dashboard",
+        help="Operation mode"
+    )
     parser.add_argument("--host", default=None, help="Dashboard host")
-    parser.add_argument("--port", type=int, default=None, help="Dashboard
-    port")
-    parser.add_argument("--debug", action="store_true", help="Enable debug
-    mode")
+    parser.add_argument("--port", type=int, default=None, help="Dashboard port")
+    parser.add_argument("--debug", action="store_true", help="Enable debug mode")
     parser.add_argument("--tickers", nargs="+", help="Tickers to analyze")
-    parser.add_argument("--hours", type=int, default=24, help="Hours of data
-    to analyze")
-    parser.add_argument("--ticker", default="AAPL", help="Ticker for training
-    demo")
+    parser.add_argument("--hours", type=int, default=24, help="Hours of data to analyze")
+    parser.add_argument("--ticker", default="AAPL", help="Ticker for training demo")
 
     args = parser.parse_args()
 
@@ -443,13 +435,11 @@ def main():
         if args.mode == "dashboard":
             logger.info("Starting in dashboard mode")
             system.start_stream_processing()
-            system.start_dashboard(host=args.host, port=args.port,
-    debug=args.debug)
+            system.start_dashboard(host=args.host, port=args.port, debug=args.debug)
 
         elif args.mode == "batch":
             logger.info("Starting in batch analysis mode")
-            system.run_batch_analysis(tickers=args.tickers,
-    hours_back=args.hours)
+            system.run_batch_analysis(tickers=args.tickers, hours_back=args.hours)
 
         elif args.mode == "stream":
             logger.info("Starting in stream processing mode")

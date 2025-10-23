@@ -55,8 +55,9 @@ class MultimodalFeatureEngineer:
         self.scalers_fitted = False
         self.selector_fitted = False
 
-        self.logger.info(f"Initialized feature engineer - lookback:
-    {lookback_window}h, horizon: {prediction_horizon}h")
+        self.logger.info(
+            f"Initialized feature engineer - lookback: {lookback_window}h, horizon: {prediction_horizon}h"
+        )
 
     def create_features(self,
                        sentiment_data: pd.DataFrame,
@@ -71,8 +72,7 @@ class MultimodalFeatureEngineer:
             target_ticker: Ticker symbol to predict
         """
         # Align data by timestamp
-        aligned_data = self._align_data(sentiment_data, market_data,
-    target_ticker)
+        aligned_data = self._align_data(sentiment_data, market_data, target_ticker)
 
         if aligned_data.empty:
             return self._create_empty_features()
@@ -144,18 +144,15 @@ class MultimodalFeatureEngineer:
         try:
             # Ensure timestamp columns
             if 'timestamp' not in sentiment_data.columns:
-                sentiment_data['timestamp'] =
-    pd.to_datetime(sentiment_data.index)
+                sentiment_data['timestamp'] = pd.to_datetime(sentiment_data.index)
             if 'timestamp' not in market_data.columns:
                 market_data['timestamp'] = pd.to_datetime(market_data.index)
 
             # Filter market data for target ticker
-            ticker_market_data = market_data[market_data.get('ticker', '') ==
-    target_ticker].copy()
+            ticker_market_data = market_data[market_data.get('ticker', '') == target_ticker].copy()
 
             if ticker_market_data.empty:
-                self.logger.warning(f"No market data found for ticker
-    {target_ticker}")
+                self.logger.warning(f"No market data found for ticker {target_ticker}")
                 return pd.DataFrame()
 
             # Resample to hourly data
@@ -176,8 +173,7 @@ class MultimodalFeatureEngineer:
             self.logger.error(f"Error aligning data: {str(e)}")
             return pd.DataFrame()
 
-    def _resample_sentiment_data(self, sentiment_data: pd.DataFrame) ->
-    pd.DataFrame:
+    def _resample_sentiment_data(self, sentiment_data: pd.DataFrame) -> pd.DataFrame:
         """Resample sentiment data to hourly frequency"""
         df = sentiment_data.copy()
         df['timestamp'] = pd.to_datetime(df['timestamp'])
@@ -270,32 +266,26 @@ class MultimodalFeatureEngineer:
         sentiment_features['positive_score'] = data.get('positive_score', 0)
         sentiment_features['negative_score'] = data.get('negative_score', 0)
         sentiment_features['neutral_score'] = data.get('neutral_score', 0)
-        sentiment_features['credibility_score'] =
-    data.get('credibility_score', 0)
+        sentiment_features['credibility_score'] = data.get('credibility_score', 0)
         sentiment_features['sentiment_volume'] = data.get('sentiment_volume',
     0)
 
         # Rolling sentiment features
         for window in [3, 6, 12, 24]:
             if len(data) > window:
-                sentiment_features[f'sentiment_ma_{window}h'] =
-    data['sentiment_score'].rolling(window).mean()
-                sentiment_features[f'sentiment_std_{window}h'] =
-    data['sentiment_score'].rolling(window).std()
+                sentiment_features[f'sentiment_ma_{window}h'] = data['sentiment_score'].rolling(window).mean()
+                sentiment_features[f'sentiment_std_{window}h'] = data['sentiment_score'].rolling(window).std()
                 sentiment_features[f'sentiment_momentum_{window}h'] = (
-                    data['sentiment_score'] -
-    data['sentiment_score'].shift(window)
+                    data['sentiment_score'] - data['sentiment_score'].shift(window)
                 )
 
         # Sentiment strength
         sentiment_features['sentiment_strength'] = (
-            sentiment_features['positive_score'] +
-    sentiment_features['negative_score']
+            sentiment_features['positive_score'] + sentiment_features['negative_score']
         )
 
         # Sentiment consensus (how decisive the sentiment is)
-        sentiment_features['sentiment_consensus'] =
-    np.abs(sentiment_features['sentiment_score'])
+        sentiment_features['sentiment_consensus'] = np.abs(sentiment_features['sentiment_score'])
 
         return sentiment_features.fillna(0)
 
@@ -311,10 +301,8 @@ class MultimodalFeatureEngineer:
         market_features['volume'] = data.get('volume', 0)
 
         # Price-based features
-        market_features['hl_ratio'] = (data['high'] - data['low']) /
-    data['close']
-        market_features['oc_ratio'] = (data['close'] - data['open']) /
-    data['open']
+        market_features['hl_ratio'] = (data['high'] - data['low']) / data['close']
+        market_features['oc_ratio'] = (data['close'] - data['open']) / data['open']
 
         # Returns
         market_features['returns_1h'] = data['close'].pct_change(1)
@@ -324,13 +312,11 @@ class MultimodalFeatureEngineer:
         # Volatility
         for window in [6, 12, 24]:
             if len(data) > window:
-                market_features[f'volatility_{window}h'] =
-    market_features['returns_1h'].rolling(window).std()
+                market_features[f'volatility_{window}h'] = market_features['returns_1h'].rolling(window).std()
 
         # Volume features
         market_features['volume_ma_24h'] = data['volume'].rolling(24).mean()
-        market_features['volume_ratio'] = data['volume'] /
-    market_features['volume_ma_24h']
+        market_features['volume_ratio'] = data['volume'] / market_features['volume_ma_24h']
 
         return market_features.fillna(0)
 
@@ -345,8 +331,7 @@ class MultimodalFeatureEngineer:
             if len(data) > window:
                 ma = close_prices.rolling(window).mean()
                 technical_features[f'ma_{window}h'] = ma
-                technical_features[f'price_ma_ratio_{window}h'] = close_prices
-    / ma
+                technical_features[f'price_ma_ratio_{window}h'] = close_prices / ma
 
         # RSI (Relative Strength Index)
         if len(data) > 14:
@@ -361,8 +346,7 @@ class MultimodalFeatureEngineer:
             exp1 = close_prices.ewm(span=12).mean()
             exp2 = close_prices.ewm(span=26).mean()
             technical_features['macd'] = exp1 - exp2
-            technical_features['macd_signal'] =
-    technical_features['macd'].ewm(span=9).mean()
+            technical_features['macd_signal'] = technical_features['macd'].ewm(span=9).mean()
 
         # Bollinger Bands
         if len(data) > 20:
@@ -387,12 +371,10 @@ class MultimodalFeatureEngineer:
         volume = data.get('volume', 0)
 
         # Sentiment-momentum alignment
-        interaction_features['sentiment_momentum_align'] = sentiment_score *
-    returns_1h
+        interaction_features['sentiment_momentum_align'] = sentiment_score * returns_1h
 
         # Sentiment-volume interaction
-        interaction_features['sentiment_volume_interaction'] = sentiment_score
-    * np.log1p(volume)
+        interaction_features['sentiment_volume_interaction'] = sentiment_score * np.log1p(volume)
 
         # Sentiment strength during high volatility
         volatility_6h = returns_1h.rolling(6).std()
@@ -402,8 +384,7 @@ class MultimodalFeatureEngineer:
 
         # Credibility-weighted sentiment
         credibility = data.get('credibility_score', 1)
-        interaction_features['credibility_weighted_sentiment'] =
-    sentiment_score * credibility
+        interaction_features['credibility_weighted_sentiment'] = sentiment_score * credibility
 
         return interaction_features.fillna(0)
 
@@ -445,8 +426,7 @@ class MultimodalFeatureEngineer:
         close_prices = data['close']
 
         # Future price change (classification: -1, 0, 1)
-        future_returns = close_prices.shift(-self.prediction_horizon).pct_chang
-    e(self.prediction_horizon)
+        future_returns = close_prices.shift(-self.prediction_horizon).pct_change(self.prediction_horizon)
 
         # Convert to classification target
         threshold = 0.02  # 2% threshold
@@ -461,10 +441,10 @@ class MultimodalFeatureEngineer:
         if not self.scalers_fitted:
             # Fit scalers on flattened data
             flattened = features.reshape(-1, features.shape[-1])
-            self.sentiment_scaler.fit(flattened[:, :10])  # First 10 features
-    assumed to be sentiment
-            self.market_scaler.fit(flattened[:, 10:])     # Rest assumed to be
-    market
+            # First 10 features assumed to be sentiment
+            self.sentiment_scaler.fit(flattened[:, :10])
+            # Rest assumed to be market features
+            self.market_scaler.fit(flattened[:, 10:])
             self.scalers_fitted = True
 
         # Transform sequences

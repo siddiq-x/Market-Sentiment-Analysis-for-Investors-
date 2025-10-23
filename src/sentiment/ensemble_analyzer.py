@@ -7,8 +7,8 @@ from dataclasses import dataclass
 from datetime import datetime
 import numpy as np
 
-from .finbert_analyzer import FinBERTAnalyzer, SentimentResult
-from .lexicon_analyzer import FinancialLexiconAnalyzer, LexiconSentimentResult
+from src.sentiment.finbert_analyzer import FinBERTAnalyzer, SentimentResult
+from src.sentiment.lexicon_analyzer import FinancialLexiconAnalyzer, LexiconSentimentResult
 
 
 @dataclass
@@ -73,8 +73,7 @@ class EnsembleSentimentAnalyzer:
                 self.lexicon_analyzer = FinancialLexiconAnalyzer()
                 self.logger.info("Lexicon analyzer initialized")
             except Exception as e:
-                self.logger.error(f"Failed to initialize lexicon analyzer:
-    {str(e)}")
+                self.logger.error(f"Failed to initialize lexicon analyzer: {str(e)}")
                 self.enable_lexicon = False
 
         # Recalculate weights if some analyzers failed
@@ -85,11 +84,13 @@ class EnsembleSentimentAnalyzer:
             self.finbert_weight = 1.0
             self.lexicon_weight = 0.0
 
-        self.logger.info(f"Ensemble weights - FinBERT:
-    {self.finbert_weight:.2f}, Lexicon: {self.lexicon_weight:.2f}")
+        self.logger.info(
+            f"Ensemble weights - FinBERT: {self.finbert_weight:.2f}, Lexicon: {self.lexicon_weight:.2f}"
+        )
 
-    def analyze_sentiment(self, text: str, context: Optional[Dict[str, Any]] =
-    None) -> EnsembleSentimentResult:
+    def analyze_sentiment(
+        self, text: str, context: Optional[Dict[str, Any]] = None
+    ) -> EnsembleSentimentResult:
         """
         Analyze sentiment using ensemble approach
 
@@ -106,21 +107,18 @@ class EnsembleSentimentAnalyzer:
 
         if self.enable_finbert and self.finbert_analyzer:
             try:
-                finbert_result = self.finbert_analyzer.analyze_sentiment(text,
-    context)
+                finbert_result = self.finbert_analyzer.analyze_sentiment(text, context)
             except Exception as e:
                 self.logger.error(f"FinBERT analysis failed: {str(e)}")
 
         if self.enable_lexicon and self.lexicon_analyzer:
             try:
-                lexicon_result = self.lexicon_analyzer.analyze_sentiment(text,
-    context)
+                lexicon_result = self.lexicon_analyzer.analyze_sentiment(text, context)
             except Exception as e:
                 self.logger.error(f"Lexicon analysis failed: {str(e)}")
 
         # Combine results
-        ensemble_sentiment, ensemble_confidence, ensemble_score =
-    self._combine_results(
+        ensemble_sentiment, ensemble_confidence, ensemble_score = self._combine_results(
             finbert_result, lexicon_result
         )
 
@@ -159,16 +157,16 @@ class EnsembleSentimentAnalyzer:
             ensemble_score=0.0,
             finbert_result=None,
             lexicon_result=None,
-            weights={"finbert": self.finbert_weight, "lexicon":
-    self.lexicon_weight},
+            weights={"finbert": self.finbert_weight, "lexicon": self.lexicon_weight},
             timestamp=datetime.now(),
             metadata={"error": "Empty or invalid text"}
         )
 
-    def _combine_results(self,
-                        finbert_result: Optional[SentimentResult],
-                        lexicon_result: Optional[LexiconSentimentResult]) ->
-    Tuple[str, float, float]:
+    def _combine_results(
+        self,
+        finbert_result: Optional[SentimentResult],
+        lexicon_result: Optional[LexiconSentimentResult],
+    ) -> Tuple[str, float, float]:
         """Combine results from different analyzers"""
 
         # Convert sentiment to numerical scores (-1 to 1)
@@ -178,8 +176,9 @@ class EnsembleSentimentAnalyzer:
         lexicon_confidence = 0.0
 
         if finbert_result:
-            finbert_score = self._sentiment_to_score(finbert_result.sentiment,
-    finbert_result.scores)
+            finbert_score = self._sentiment_to_score(
+                finbert_result.sentiment, finbert_result.scores
+            )
             finbert_confidence = finbert_result.confidence
 
         if lexicon_result:
@@ -189,10 +188,12 @@ class EnsembleSentimentAnalyzer:
         # Calculate weighted ensemble score
         if finbert_result and lexicon_result:
             # Both analyzers available
-            ensemble_score = (finbert_score * self.finbert_weight +
-                            lexicon_score * self.lexicon_weight)
-            ensemble_confidence = (finbert_confidence * self.finbert_weight +
-                                 lexicon_confidence * self.lexicon_weight)
+            ensemble_score = (
+                finbert_score * self.finbert_weight + lexicon_score * self.lexicon_weight
+            )
+            ensemble_confidence = (
+                finbert_confidence * self.finbert_weight + lexicon_confidence * self.lexicon_weight
+            )
         elif finbert_result:
             # Only FinBERT available
             ensemble_score = finbert_score
@@ -211,14 +212,16 @@ class EnsembleSentimentAnalyzer:
 
         # Adjust confidence based on agreement between methods
         if finbert_result and lexicon_result:
-            agreement = self._calculate_agreement(finbert_result.sentiment,
-    lexicon_result.sentiment)
+            agreement = self._calculate_agreement(
+                finbert_result.sentiment, lexicon_result.sentiment
+            )
             ensemble_confidence *= agreement
 
         return ensemble_sentiment, ensemble_confidence, ensemble_score
 
-    def _sentiment_to_score(self, sentiment: str, scores: Optional[Dict[str,
-    float]] = None) -> float:
+    def _sentiment_to_score(
+        self, sentiment: str, scores: Optional[Dict[str, float]] = None
+    ) -> float:
         """Convert sentiment category to numerical score (-1 to 1)"""
         if scores:
             # Use raw scores if available (more nuanced)
@@ -253,10 +256,9 @@ class EnsembleSentimentAnalyzer:
         else:
             return 0.6  # Disagreement (positive vs negative)
 
-    def batch_analyze(self,
-                     texts: List[str],
-                     contexts: Optional[List[Dict[str, Any]]] = None) ->
-    List[EnsembleSentimentResult]:
+    def batch_analyze(
+        self, texts: List[str], contexts: Optional[List[Dict[str, Any]]] = None
+    ) -> List[EnsembleSentimentResult]:
         """Analyze sentiment for multiple texts"""
         results = []
         contexts = contexts or [None] * len(texts)
@@ -268,8 +270,7 @@ class EnsembleSentimentAnalyzer:
 
         return results
 
-    def get_ensemble_summary(self, results: List[EnsembleSentimentResult]) ->
-    Dict[str, Any]:
+    def get_ensemble_summary(self, results: List[EnsembleSentimentResult]) -> Dict[str, Any]:
         """Get summary statistics of ensemble analysis results"""
         if not results:
             return {}
@@ -304,8 +305,9 @@ class EnsembleSentimentAnalyzer:
             },
             "average_confidence": total_confidence / total_results,
             "average_ensemble_score": total_ensemble_score / total_results,
-            "dominant_sentiment": max(sentiment_counts.keys(), key=lambda k:
-    sentiment_counts[k]),
+            "dominant_sentiment": max(
+                sentiment_counts.keys(), key=lambda k: sentiment_counts[k]
+            ),
             "analyzer_availability": {
                 "finbert_available": finbert_available,
                 "lexicon_available": lexicon_available,
@@ -326,11 +328,11 @@ class EnsembleSentimentAnalyzer:
         if total_weight > 0:
             self.finbert_weight = finbert_weight / total_weight
             self.lexicon_weight = lexicon_weight / total_weight
-            self.logger.info(f"Updated weights - FinBERT:
-    {self.finbert_weight:.2f}, Lexicon: {self.lexicon_weight:.2f}")
+            self.logger.info(
+                f"Updated weights - FinBERT: {self.finbert_weight:.2f}, Lexicon: {self.lexicon_weight:.2f}"
+            )
         else:
-            self.logger.warning("Invalid weights provided, keeping current
-    weights")
+            self.logger.warning("Invalid weights provided, keeping current weights")
 
     def get_analyzer_status(self) -> Dict[str, Any]:
         """Get status of individual analyzers"""
